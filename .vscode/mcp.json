@@ -1,0 +1,13 @@
+{
+  "servers": {
+    "agent-building-agent": {
+      "type": "stdio",
+      "command": "zsh",
+      "args": [
+        "-lc",
+        "source '/Users/frank/SynologyDrive/Drive/LaptopOnly/Programming/agentic-trading-solutions/.env' && exec uv run .venv/bin/agent-building-agent mcp-serve"
+      ],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}

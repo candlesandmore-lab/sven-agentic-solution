@@ -1,0 +1,12 @@
+schema:
+  name: gate_result
+  version: 1
+  required_fields:
+    - state
+    - blocking_findings
+    - deferred_follow_up_stories
+    - reviewer_summary
+  state_values:
+    - pass
+    - pass_with_deferred_follow_up
+    - blocked

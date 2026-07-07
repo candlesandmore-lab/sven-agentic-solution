@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "agent-building-agent": {
+      "command": "agent-building-agent",
+      "args": [
+        "mcp-serve"
+      ]
+    }
+  }
+}
