@@ -1,0 +1,141 @@
+story_task_plan:
+  story_id: 1
+  source_implementation_spec: docs/implementation/01-narrative-cluster-discovery-surface.md
+  source_architecture: docs/architecture/01-technical-trader-solution.md
+  agent_identifier_note: >
+    owner/agent values below use the canonical delegation-map slugs defined in
+    .claude/agents/agent-dev-agent.md (python-creation-agent, coded-subagent-creation-agent,
+    qa-agent, review-validation-agent), not the prose names used in agent-dev-agent's own
+    packaged architecture document.
+  ordered_tasks:
+    - id: task_1_scaffold_package
+      owner: python-creation-agent
+      description: >
+        Scaffold the uv-managed narrative_clusters Python package (pyproject, package
+        skeleton, tests/ demos/ fixtures/ directories) per docs/implementation/
+        01-narrative-cluster-discovery-surface.md's Interface Contracts.
+      prerequisite_artifacts: []
+    - id: task_2_coded_agent_pipeline
+      owner: coded-subagent-creation-agent
+      description: >
+        Implement the Narrative Extraction and Clustering Pipeline as a LangGraph coded
+        agent on the ClaudeCode SDK base: entry, fetch, extract, cluster, label, trend,
+        persist, evaluate, and terminal nodes per the implementation spec's Coded-Agent
+        Flow. Use BERTopic (per the implementation spec's Topic-Modeling Library section)
+        for embedding and topic extraction, and implement the cluster-identity matching
+        algorithm exactly as specified in the implementation spec's Storage section
+        (Jaccard member-overlap >= 0.5 AND topic-embedding cosine similarity >= 0.6,
+        highest-average-score tie-break toward the older cluster_id). Implement the
+        SQLite storage layer (narrative_findings, clusters, cluster_trend_snapshots).
+        Both the library choice and the matching algorithm are already decided in the
+        implementation spec; this task implements them, it does not choose them.
+      prerequisite_artifacts:
+        - task_1_scaffold_package
+    - id: task_3_invocation_surface_wiring
+      owner: python-creation-agent
+      description: >
+        Register the narrative-extraction-and-clustering coded agent as a new section in
+        this workspace's coded-agent-config.yaml (LLM endpoint, model, user-reviewable
+        system_prompt, max_tokens) and generate its SDK, CLI (`tts narrative
+        run-nightly`), and MCP invocation surfaces per the implementation spec's
+        Interface Contracts. MCP tools are registered in this workspace's own local MCP
+        server/config, not packaged as a distributable instructed-agent asset.
+      prerequisite_artifacts:
+        - task_2_coded_agent_pipeline
+    - id: task_4_discovery_surface_dashboard
+      owner: python-creation-agent
+      description: >
+        Build the Streamlit + Plotly Discovery Surface page (cluster list with topic
+        label and trend sparkline; side-by-side chart view of a selected cluster's
+        member tickers via the FMP historical price endpoint) and the `tts dashboard
+        serve` CLI entry point. The page calls only the narrative_clusters SDK functions
+        (get_clusters, get_cluster_trend) for all data it displays and never queries the
+        SQLite store directly, per the implementation spec's Discovery Surface data
+        access contract.
+      prerequisite_artifacts:
+        - task_3_invocation_surface_wiring
+    - id: task_5_qa_validation
+      owner: qa-agent
+      description: >
+        Data-driven unit tests for extraction, clustering, and trend computation using
+        the fixture files at tests/fixtures/narrative_clusters/documents.yaml and
+        tests/fixtures/narrative_clusters/prior_run_clusters.yaml (per the implementation
+        spec's Validation Expectations); interface tests for CLI, SDK, and MCP reusing
+        the same fixtures as live input when an FMP API key is configured, mocked
+        otherwise; prompt-validation test for the label node confirming single-string
+        output validation and refinement behavior (developer approval required); a demo
+        run showing a multi-ticker cluster, its label, its trend snapshot, and the
+        dashboard page rendering it with a working chart-inspection link.
+      prerequisite_artifacts:
+        - task_2_coded_agent_pipeline
+        - task_3_invocation_surface_wiring
+        - task_4_discovery_surface_dashboard
+    - id: task_6_final_review
+      owner: review-validation-agent
+      description: >
+        Final review gate across code, tests, demo, and documentation alignment before
+        final alignment validation and story completion.
+      prerequisite_artifacts:
+        - task_5_qa_validation
+  parallelizable_tasks:
+    - note: >
+        task_5_qa_validation executes as a single serial phase after task_4 in this
+        story. Its extraction/clustering/trend unit tests do not themselves depend on
+        the dashboard and could in principle start as soon as task_3 completes; this is
+        recorded here as a future pipelining optimization only, not as an executable
+        split in this story's task plan.
+  review_checkpoints:
+    - after: task_2_coded_agent_pipeline
+      note: Review the coded-agent implementation against the implementation spec's
+        BERTopic and cluster-matching-algorithm specification before wiring invocation
+        surfaces.
+    - after: task_4_discovery_surface_dashboard
+      note: Review the dashboard page against the story's success criteria (no automated
+        theme creation, STR-011 compliance, SDK-only data access) before QA.
+    - after: task_5_qa_validation
+      note: Final review gate before final alignment validation.
+  completion_conditions:
+    - All five story success criteria are demonstrably met by the implemented pipeline,
+      storage, and dashboard page.
+    - Data-driven unit, interface, and prompt-validation tests pass; developer approval
+      recorded for the prompt-flow and demo-flow checks.
+    - docs/architecture/01-technical-trader-solution.md, docs/implementation/
+      01-narrative-cluster-discovery-surface.md, and the story YAML are aligned with the
+      shipped code; any drift is corrected in the same story.
+    - The narrative_clusters coded agent's SDK, CLI (tts), and MCP surfaces are generated
+      and its MCP tools are registered in this workspace's own local MCP server/config,
+      per the mandatory SDK/CLI/MCP generation rule. This is local-workspace tooling
+      registration, not the separate distributable-instructed-agent-asset packaging
+      concept (INSTALL.md, rendering into other developers' framework targets); that
+      broader packaging concern does not apply to story 001 because the Technical Trader
+      Solution is not being distributed to other developers in this story.
+    - Working tree is clean (or the human trader has explicitly approved committing)
+      before the story moves to implemented.
+  solution_surface: coded_agent
+  top_level_runtime: instructed
+  subagent_topology:
+    - sub_agent: narrative_extraction_and_clustering_pipeline
+      classification: coded_agent
+  phase_owners:
+    - phase: task_1_scaffold_package
+      agent: python-creation-agent
+    - phase: task_2_coded_agent_pipeline
+      agent: coded-subagent-creation-agent
+    - phase: task_3_invocation_surface_wiring
+      agent: python-creation-agent
+    - phase: task_4_discovery_surface_dashboard
+      agent: python-creation-agent
+    - phase: task_5_qa_validation
+      agent: qa-agent
+    - phase: task_6_final_review
+      agent: review-validation-agent
+  invocation_surfaces:
+    sdk:
+      status: generated
+      rationale: null
+    cli:
+      status: generated
+      rationale: null
+    mcp:
+      status: generated
+      rationale: null

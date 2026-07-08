@@ -51,6 +51,9 @@ story:
         - Custom API-plus-frontend build for the Discovery Surface page; rejected in favor of
           Streamlit for faster delivery of an interactive, Python-native page reusing the
           pipeline's own data-access functions directly.
+        - BERTopic chosen as the topic-modeling library over classic LDA and scikit-learn NMF
+          (weaker embedding-based semantic similarity, more manual tuning); see
+          docs/implementation/01-narrative-cluster-discovery-surface.md Topic-Modeling Library.
     - option: Local web dashboard as the Technical Trader Solution's delivery interface (chosen
         with the human trader on 2026-07-08); see
         docs/architecture/01-technical-trader-solution.md Delivery Interface.
@@ -154,8 +157,31 @@ story:
           Also incorporated the non-deferrable label-node output-validation expectation, and
           two info/minor traceability clarifications (FMP historical-price cross-reference,
           topic-modeling library deferral rationale) directly into the implementation spec.
-    deferred_items:
-      - Cluster-identity persistence matching algorithm (overlap threshold, dominant-topic
-        tie-breaking, new-cluster-creation criteria) - to be specified in the task plan after
-        topic-modeling library selection, before implementation execution begins.
+      - severity: blocking
+        finding: Task-plan review gate found deferring the cluster-matching algorithm and
+          topic-modeling library choice into task execution itself (rather than resolving
+          them at the implementation-spec layer first) violated abstraction alignment; also
+          found a contradiction between an MCP-surface exemption claim and generating MCP,
+          plus several important/minor holes (dashboard data-access ambiguity, missing
+          fixture paths, unclear parallelization model, undefined CLI name)
+        resolution: >
+          Blocked on first pass (task review-us-015-task-plan-v1, 2026-07-08). Resolved by
+          updating docs/implementation/01-narrative-cluster-discovery-surface.md v0.3
+          directly (not the task plan) with the concrete Jaccard/cosine cluster-matching
+          algorithm, the BERTopic library choice with alternatives considered, the `tts` CLI
+          name, the dashboard's SDK-only data-access contract, and fixture file paths. Task
+          plan updated to implement (not choose) these spec-level decisions, corrected the
+          MCP/packaging scope wording, and simplified the parallelization note. Both are
+          non-UI implementation choices, decided without escalating to the human trader.
+      - severity: info
+        finding: Task-plan review gate re-run after the above resolution
+        resolution: >
+          Passed clean (task review-us-015-task-plan-v2, 2026-07-08): all three prior
+          blocking findings confirmed resolved; solution_surface/top_level_runtime/
+          subagent_topology/phase_owners/invocation_surfaces block confirmed complete and
+          non-contradictory; ordered_tasks/prerequisite_artifacts confirmed a valid,
+          cycle-free dependency order. One minor, deferrable note about fixture-count
+          specificity accepted as-is. Task plan file:
+          development/backlog/active/001-narrative-cluster-discovery-surface-task-plan.yaml.
+    deferred_items: []
   open_questions: []
