@@ -28,3 +28,7 @@ The methodology corpus is now linked from this index for quick navigation:
 ## Architecture document lookup
 
 - [architecture/01-technical-trader-solution.md](architecture/01-technical-trader-solution.md) — Technical Trader Solution architecture foundations, component topology, and solution-surface classification, established with story 001 (US-015 Narrative-Cluster Discovery Surface).
+
+## Implementation document lookup
+
+- [implementation/01-narrative-cluster-discovery-surface.md](implementation/01-narrative-cluster-discovery-surface.md) — implementation specification for the nightly narrative extraction and clustering pipeline and the Discovery Surface dashboard page (story 001, US-015).

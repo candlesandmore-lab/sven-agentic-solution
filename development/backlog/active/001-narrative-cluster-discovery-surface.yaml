@@ -44,12 +44,26 @@ story:
     - option: Use the FMP API to source raw earnings reports, SEC filings, and news for target
         tickers on a nightly batch cadence. Apply topic modeling to derive narrative clusters
         from extracted per-ticker findings. Integrate cluster results into the Technical Trader
-        Solution with interactive, side-by-side chart visualization.
+        Solution with interactive, side-by-side chart visualization. See
+        docs/implementation/01-narrative-cluster-discovery-surface.md for the full data
+        contracts, storage, and interface specification.
+      alternatives_considered:
+        - Custom API-plus-frontend build for the Discovery Surface page; rejected in favor of
+          Streamlit for faster delivery of an interactive, Python-native page reusing the
+          pipeline's own data-access functions directly.
+    - option: Local web dashboard as the Technical Trader Solution's delivery interface (chosen
+        with the human trader on 2026-07-08); see
+        docs/architecture/01-technical-trader-solution.md Delivery Interface.
+      alternatives_considered:
+        - CLI plus notebook workflow; rejected as more manual for interactive chart inspection.
+        - Plug into an existing third-party charting platform; rejected to avoid an external
+          platform dependency for the first capability.
   repository_context:
     branch: sven_input
     base_commit: 98606b1622f93af7aec090557993d53c3143f62c
   current_implementation:
     architecture_document: docs/architecture/01-technical-trader-solution.md
+    implementation_document: docs/implementation/01-narrative-cluster-discovery-surface.md
   guidelines:
     - All clustering is based strictly on shared or adjacent narrative/topic, without regard to
       quantitative pair bonds, sync signals, or existing theme membership (MB-013's reverse path).
@@ -83,6 +97,11 @@ story:
       - Author docs/architecture/01-technical-trader-solution.md as the first architecture pass,
         covering component topology, solution_surface classification (coded_agent), and the
         fixed nightly pipeline decision, confirmed with the human trader.
+      - Confirm the Technical Trader Solution's delivery interface (local web dashboard) with
+        the human trader and record it in docs/architecture/01-technical-trader-solution.md.
+      - Author docs/implementation/01-narrative-cluster-discovery-surface.md covering data
+        contracts, local storage, the Streamlit-based Discovery Surface page, and CLI/SDK/MCP
+        interface contracts.
       - Design and implement nightly FMP data ingestion to retrieve earnings reports, SEC
         filings, and news per ticker.
       - Develop topic-modeling extraction and clustering workflow from ingested narrative data.
@@ -124,5 +143,19 @@ story:
           confirmed; vocabulary compliance confirmed. One non-blocking, deferred cosmetic
           note about the Component Topology diagram format did not require a change (the
           document already uses a fenced mermaid code block).
-    deferred_items: []
+      - severity: important
+        finding: Implementation-spec review gate found the cluster-identity persistence
+          matching algorithm under-specified
+        resolution: >
+          Passed with deferred follow-up (task review-us-015-implementation-spec-v1,
+          2026-07-08). Explicitly deferred the matching-algorithm design (overlap threshold,
+          dominant-topic tie-breaking, new-cluster-creation criteria) to the task plan, to be
+          resolved after topic-modeling library selection and before implementation execution.
+          Also incorporated the non-deferrable label-node output-validation expectation, and
+          two info/minor traceability clarifications (FMP historical-price cross-reference,
+          topic-modeling library deferral rationale) directly into the implementation spec.
+    deferred_items:
+      - Cluster-identity persistence matching algorithm (overlap threshold, dominant-topic
+        tie-breaking, new-cluster-creation criteria) - to be specified in the task plan after
+        topic-modeling library selection, before implementation execution begins.
   open_questions: []

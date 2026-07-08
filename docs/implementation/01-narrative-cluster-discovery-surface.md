@@ -1,0 +1,183 @@
+# Narrative-Cluster Discovery Surface Implementation Specification
+
+## Purpose
+
+Define the implementation contract for story 001 (US-015 Narrative-Cluster Discovery Surface):
+the nightly narrative extraction and clustering pipeline, its local store, and the Discovery
+Surface page of the Technical Trader Solution's local web dashboard (see
+`docs/architecture/01-technical-trader-solution.md`, Delivery Interface).
+
+## Scope
+
+### In scope
+
+- Nightly data ingestion from the FMP data provider (earnings call transcripts, SEC filings,
+  news coverage) for every ticker in the eligible universe.
+- Per-ticker narrative/topic extraction, topic modeling, cluster formation, cluster labeling,
+  and frequency/breadth trend computation.
+- Local storage of narrative findings, clusters, and trend snapshots.
+- The Discovery Surface page: cluster list with topic label and trend, and navigation into a
+  side-by-side chart view of a cluster's member tickers.
+
+### Out of scope
+
+- Theme creation and theme maintenance (a human trader action, out of this capability's scope
+  per STR-011; covered by future stories).
+- Bond network, sync rank, and pair-bond computation (separate, not-yet-scheduled stories).
+- Any capability beyond the Discovery Surface page inside the local web dashboard shell (the
+  dashboard shell itself is introduced here only to the extent story 001 needs it to render one
+  page; further dashboard-wide navigation/shell work is a follow-up story if more pages are
+  added later).
+
+## Role
+
+- Name: Narrative Extraction and Clustering Pipeline.
+- Type: coded agent (LangGraph, ClaudeCode SDK base), per
+  `docs/architecture/01-technical-trader-solution.md` Solution-Surface Classification.
+- Primary goal: turn raw FMP text sources into per-ticker narrative findings and labeled ticker
+  clusters, refreshed nightly, without requiring open-ended reasoning or tool choice.
+
+## Coded-Agent Flow
+
+- Entry node: load the nightly run's eligible-universe ticker list and prior run's watermark
+  (last-seen document timestamp per ticker/source) so only new documents are processed.
+- Fetch node: call the FMP data provider for each ticker's earnings call transcripts, SEC
+  filings, and news items published since the watermark.
+- Extract node: derive per-document narrative/topic signals (keyphrase and named-entity
+  extraction) from each fetched document, producing one narrative-finding record per document.
+- Cluster node: run topic modeling across the current run's narrative findings for the full
+  eligible universe, grouping tickers whose dominant topics are shared or overlapping
+  (independent of pair-bond, sync, or theme status).
+- Label node: for each resulting cluster, issue one bounded model call that turns the cluster's
+  top keyphrases and a small sample of representative excerpts into a short topic label.
+- Trend node: compute each cluster's frequency-of-mention (finding count) and company-breadth
+  (distinct ticker count) for the run, and append a trend snapshot.
+- Persist node: write narrative findings, cluster assignments, cluster labels, and trend
+  snapshots to the local store.
+- Evaluate node: validate the run's output against the schema below (non-empty findings when
+  source documents existed, every cluster has a label and at least one member, trend snapshot
+  recorded); refine (re-run label or cluster node) on failure, per the coded-agent runtime
+  contract.
+- Terminal node: mark the run complete, or return the five-iteration failure contract with
+  questions if evaluation cannot pass.
+
+## Data Contracts
+
+### Narrative finding record
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `ticker` | string | Eligible-universe ticker this finding belongs to. |
+| `source_type` | enum | `earnings_transcript`, `sec_filing`, or `news`. |
+| `source_id` | string | FMP-provided identifier for the source document. |
+| `published_at` | datetime | Source document's publication timestamp. |
+| `keyphrases` | list of strings | Extracted keyphrases from the document. |
+| `entities` | list of strings | Extracted named entities from the document. |
+| `fetched_at` | datetime | When this workspace fetched the document. |
+
+### Cluster record
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `cluster_id` | string | Stable id for the cluster across nightly runs while membership persists. |
+| `run_date` | date | Nightly run this cluster snapshot belongs to. |
+| `topic_label` | string | Short topic label or summary produced by the label node. |
+| `member_tickers` | list of strings | Tickers assigned to this cluster for this run. |
+| `frequency_of_mention` | integer | Narrative-finding count feeding this cluster for this run. |
+| `company_breadth` | integer | Distinct member-ticker count for this run. |
+
+### Cluster trend snapshot
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `cluster_id` | string | References the cluster record. |
+| `run_date` | date | Nightly run date. |
+| `frequency_of_mention` | integer | Same-run value, retained for trend charting over time. |
+| `company_breadth` | integer | Same-run value, retained for trend charting over time. |
+
+## Storage
+
+- Local SQLite store (`data/narrative_clusters.sqlite`), matching this workspace's existing
+  coded-agent-state persistence pattern (`.agent_building_agent/coded_agent_state/*.sqlite`).
+- Tables: `narrative_findings`, `clusters`, `cluster_trend_snapshots`, indexed by `ticker` and
+  `run_date` for nightly incremental writes and Discovery Surface reads.
+- Cluster identity persists across nightly runs by dominant-topic and member-overlap matching
+  against the prior run's clusters, so trend snapshots can be charted over time per cluster
+  rather than resetting nightly. The exact matching algorithm (overlap threshold, dominant-topic
+  tie-breaking rules, and new-cluster-creation criteria) is deferred to the task plan, to be
+  specified after the topic-modeling library is selected there, since library-specific
+  clustering features may influence the matching logic; the task plan must resolve this before
+  implementation execution begins.
+
+## Discovery Surface (Dashboard Page)
+
+- Framework: Streamlit, chosen over a custom API-plus-frontend build or Dash for fastest delivery
+  of an interactive, Python-native page reusing the pipeline's own data-access functions
+  directly; Plotly for the trend and side-by-side chart rendering embedded in the page.
+- Page contents: a list of current clusters, each showing its `topic_label`, current
+  `frequency_of_mention` and `company_breadth`, and a trend sparkline from
+  `cluster_trend_snapshots`.
+- Selecting a cluster opens a side-by-side chart view of its `member_tickers`, sourced from the
+  FMP data provider's historical price endpoint (the same data provider already approved for
+  this story; no new external dependency).
+- Theme creation is never offered as an automated action from this page; the page only supports
+  chart inspection, per STR-011 and the story's success criteria.
+
+## Interface Contracts
+
+Per the mandatory SDK/CLI/MCP generation rule for a shared core Python layer:
+
+- Core Python layer: `narrative_clusters` package exposing `run_nightly_pipeline(as_of: date)`,
+  `get_clusters(run_date: date | None)`, and `get_cluster_trend(cluster_id: str)`.
+- SDK: same functions re-exported from the Technical Trader Solution's SDK surface.
+  Status: generated.
+- CLI: `ttsol narrative run-nightly` (triggers a pipeline run) and `ttsol dashboard serve`
+  (launches the Discovery Surface page locally). Status: generated.
+- MCP: `narrative_clusters` tools (`run_nightly_pipeline`, `get_clusters`, `get_cluster_trend`)
+  registered in `coded-agent-config.yaml` alongside the other coded agents in this workspace.
+  Status: generated.
+- Prompt contract (label node): input is a cluster's top keyphrases plus up to three
+  representative excerpts; output is exactly one short topic label string (no JSON wrapper
+  needed since the label node's output is a single string, unlike the four framework coded
+  agents' structured JSON payloads).
+
+## Validation Expectations
+
+- Unit tests for extraction, clustering, and trend computation using data-driven fixtures (a
+  small sample set of earnings-transcript, SEC-filing, and news documents covering at least two
+  distinct narrative topics across multiple tickers).
+- Interface tests for the CLI, SDK, and MCP surfaces.
+- Prompt-validation test for the label node (developer approval required, per the QA agent's
+  prompt-flow check requirement), confirming the evaluate node correctly validates the label
+  node's single-string output (non-empty, bounded length) and triggers refinement when the
+  output is missing or malformed, since this output shape differs from the structured JSON
+  payloads the four framework coded agents produce.
+- Demo: a run against fixture data showing at least one multi-ticker cluster, its topic label,
+  its trend snapshot, and the Discovery Surface page rendering that cluster with a working
+  chart-inspection link.
+
+## Dependencies
+
+- FMP data provider API access (existing) for earnings call transcripts, SEC filings, news, and
+  historical price data. FMP's approval as this workspace's data provider is recorded in
+  `docs/architecture/01-technical-trader-solution.md`'s Non-Functional Constraints section;
+  this spec's use of the historical price endpoint is the same already-approved provider, not
+  a new external dependency.
+- Topic-modeling and embedding libraries for the cluster node; the specific package choice is
+  deferred to the task plan because it affects only the internal clustering and cluster-matching
+  implementation (see Storage above), not the interface contracts or storage schema already
+  defined here.
+- Streamlit and Plotly for the Discovery Surface page.
+- Depends on `docs/architecture/01-technical-trader-solution.md`'s Delivery Interface and
+  Solution-Surface Classification decisions.
+
+## Change Log
+
+- v0.1 (2026-07-08) -- initial implementation specification for story 001, covering the nightly
+  narrative extraction and clustering pipeline, its local store, and the Discovery Surface
+  dashboard page.
+- v0.2 (2026-07-08) -- implementation-spec review pass (task
+  review-us-015-implementation-spec-v1): explicitly deferred the cluster-identity matching
+  algorithm to the task plan (Storage section); added the label node's single-string output
+  validation expectation (Validation Expectations); cross-referenced FMP historical-price-data
+  approval and clarified the topic-modeling library deferral rationale (Dependencies).

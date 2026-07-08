@@ -51,6 +51,20 @@ is extended incrementally as further backlog stories are implemented.
   proves too coarse for a specific narrow subset of tickers, a flexible step can be added as a
   follow-up story (deferred, not designed here).
 
+## Delivery Interface
+
+- Decision: the Technical Trader Solution is delivered as a local web dashboard the human
+  trader runs on their own machine, not a CLI-first or notebook-first tool, and not a plugin
+  into a third-party charting platform.
+- Options considered: (1) local web dashboard (chosen); (2) CLI plus notebook workflow; (3)
+  feed data into an existing third-party charting platform.
+- Rationale: confirmed directly with the human trader (2026-07-08). A local web dashboard
+  supports interactive cluster browsing and side-by-side chart inspection with point-and-click
+  navigation, matching how the human trader wants to work day to day; this choice governs the
+  Discovery Surface's implementation and every future capability's presentation layer.
+- Consequence: the Discovery Surface (and future capability surfaces) are pages or views inside
+  one local web dashboard, backed by a shared Python core.
+
 ## Component Topology
 
 ```mermaid
@@ -80,8 +94,9 @@ Responsibilities:
 
 ### Discovery Surface
 
-Type: presentation and interaction capability. Its own solution-surface classification is
-deferred to its implementation-spec and task-plan pass; it is not itself an agent.
+Type: presentation and interaction capability; a page within the local web dashboard (see
+Delivery Interface). Its own solution-surface classification is deferred to its
+implementation-spec and task-plan pass; it is not itself an agent.
 
 Responsibilities:
 
@@ -128,3 +143,6 @@ capabilities require it. No dedicated top-level orchestrator component is being 
 - v0.1 (2026-07-08) -- initial architecture pass, scoped to story 001 (US-015 Narrative-Cluster
   Discovery Surface). Solution-surface classification `coded_agent` confirmed with the human
   trader.
+- v0.2 (2026-07-08) -- added Delivery Interface decision: the Technical Trader Solution is a
+  local web dashboard, confirmed with the human trader. Updated Discovery Surface to record it
+  as a page within that dashboard.
