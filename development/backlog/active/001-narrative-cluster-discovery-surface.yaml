@@ -2,7 +2,7 @@ schema_version: 1
 story:
   id: 1
   title: Narrative-Cluster Discovery Surface
-  state: open
+  state: active
   created_on: 2026-07-08
   last_updated_on: 2026-07-08
   source_todo:
