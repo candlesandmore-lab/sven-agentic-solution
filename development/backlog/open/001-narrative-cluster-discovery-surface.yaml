@@ -1,0 +1,106 @@
+schema_version: 1
+story:
+  id: 1
+  title: Narrative-Cluster Discovery Surface
+  state: open
+  created_on: 2026-07-08
+  last_updated_on: 2026-07-08
+  source_todo:
+    - development/todos/001-trial-US-015.md
+  actor: human trader
+  goal: >
+    When reviewing narrative or topic findings drawn from earnings reports, SEC filings, and
+    news coverage, the human trader sees tickers grouped into clusters by shared or adjacent
+    narrative, independent of whether any pair bond or sync signal exists between them and
+    independent of existing theme membership. For each cluster the human trader can see which
+    storyline or topic ties it together, and how its frequency of mention or company breadth is
+    trending. From a cluster the human trader can move directly into a side-by-side chart
+    inspection of its members to assess whether to create a theme from it (STR-011).
+  success_criteria:
+    - Extract narratives and topics from earnings reports, SEC filings, and news coverage per
+      ticker using the FMP data provider, refreshed on a nightly batch cadence.
+    - Group tickers into clusters via topic modeling on extracted narratives, based on shared or
+      overlapping topics, independent of whether a pair bond or sync signal exists between them,
+      and independent of existing theme membership.
+    - For each cluster, display a short topic label or summary of the storyline that ties it
+      together, and how its frequency of mention or company breadth is trending.
+    - Enable the human trader to move directly from a cluster into a side-by-side chart
+      inspection of its members.
+    - Theme creation from a narrative cluster remains the human trader's discretionary judgment
+      made after chart inspection; the Technical Trader Solution must never automatically create
+      a theme from narrative clustering alone.
+  architecture_options:
+    - option: Modular architecture where narrative extraction (agent-based or scheduled batch),
+        topic-modeling clustering, and visualization are separate, loosely-coupled components.
+  implementation_options:
+    - option: Use the FMP API to source raw earnings reports, SEC filings, and news for target
+        tickers on a nightly batch cadence. Apply topic modeling to derive narrative clusters
+        from extracted per-ticker findings. Integrate cluster results into the Technical Trader
+        Solution with interactive, side-by-side chart visualization.
+  repository_context:
+    branch: sven_input
+    base_commit: 98606b1622f93af7aec090557993d53c3143f62c
+  current_implementation: {}
+  guidelines:
+    - All clustering is based strictly on shared or adjacent narrative/topic, without regard to
+      quantitative pair bonds, sync signals, or existing theme membership (MB-013's reverse path).
+    - Cluster tickers using topic modeling over extracted narrative findings, grouping by shared
+      or overlapping dominant topics.
+    - Narrative extraction and cluster surfacing refresh on the same nightly batch cadence as the
+      existing bond-network computation.
+    - Each cluster's storyline is displayed as a short topic label or summary, not full quoted
+      excerpts or raw headlines.
+    - Narrative clustering alone never creates a theme, per STR-011 - a theme is created only
+      once the human trader inspects the clustered tickers' charts and confirms a sufficient
+      portion shows a similar rhythm, price direction, or other discretionary chart
+      characteristic.
+    - The narrative extraction workflow should be extensible to other narrative sources as
+      needed, supporting the cluster-driven human trader workflow.
+  impact_analysis:
+    methodology: >
+      Exploits MB-013 (Narrative Formation) via STR-011 (Narrative-Led Cluster Discovery,
+      Chart-Confirmed into a Theme): narrative convergence across a group of tickers can precede
+      any sync-threshold crossing and constitutes an alternative theme-genesis path alongside the
+      usual sync-first path; per-ticker narrative findings narrow investigation of what connects
+      a candidate group independent of how it first surfaced. Chart-level human trader
+      confirmation remains required before any theme is created; narrative strength alone never
+      creates a theme.
+    architecture: Encourages separation of concerns between nightly narrative extraction,
+      topic-modeling clustering, and UI exposure.
+    implementation: Topic-modeling-driven narrative grouping may expose tickers to cross-sectoral
+      patterns invisible in traditional pair or theme-based analytics.
+  development_cycle:
+    steps:
+      - Design and implement nightly FMP data ingestion to retrieve earnings reports, SEC
+        filings, and news per ticker.
+      - Develop topic-modeling extraction and clustering workflow from ingested narrative data.
+      - Integrate clustering logic into the Technical Trader Solution.
+      - Implement narrative cluster surface with topic-label storyline, frequency, and breadth
+        displays.
+      - Enable navigation from cluster results to side-by-side chart inspection of cluster
+        tickers.
+    review_findings:
+      - severity: blocking
+        finding: Tech-restricted term 'agentic'/'agent' appeared in functional success_criteria
+          and guidelines
+        resolution: Reworded to capability language; agent/non-agent choice moved to
+          architecture_options.
+      - severity: blocking
+        finding: Bare 'trader' in guidelines
+        resolution: Corrected to 'human trader'.
+      - severity: blocking
+        finding: success_criteria did not make theme-creation discretion explicit
+        resolution: Added explicit success_criteria entry and guideline citing STR-011.
+      - severity: important
+        finding: Story did not cite MB-013/STR-011
+        resolution: Added citation to impact_analysis.methodology and goal.
+      - severity: info
+        finding: Open questions on clustering definition, refresh cadence, and storyline
+          granularity required human trader input
+        resolution: >
+          Human trader chose (1) topic modeling with topic overlap for clustering, (2) nightly
+          batch cadence aligned with existing bond-network computation, (3) short topic label or
+          summary for displayed storylines. Incorporated into success_criteria and guidelines;
+          open_questions cleared.
+    deferred_items: []
+  open_questions: []

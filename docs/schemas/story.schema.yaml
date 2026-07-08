@@ -1,0 +1,41 @@
+# Copyright (c) 2026 agent-building-agent contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Source: https://TBD (training course)
+
+schema:
+  name: story
+  version: 1
+  required_top_level_keys:
+    - schema_version
+    - story
+  story_required_fields:
+    - id
+    - title
+    - state
+    - created_on
+    - last_updated_on
+    - source_todo
+    - actor
+    - goal
+    - success_criteria
+    - architecture_options
+    - implementation_options
+    - repository_context
+    - current_implementation
+    - guidelines
+    - impact_analysis
+    - development_cycle
+    - open_questions
+  lifecycle_states:
+    - open
+    - active
+    - implemented
+  open_question_required_fields:
+    - question
+    - options
+  constraints:
+    - A story should normally contain no more than five success criteria.
+    - Story ids are assigned by scanning all backlog lifecycle folders and incrementing the highest numeric prefix.
+    - Each `open_questions` entry must include `question` and `options`. An empty list is valid when no open questions remain.
+    - Use one canonical term per concept inside a story. Synonyms and alias terms are treated as review findings.
+    - Do not auto-select among design or implementation options. Record them in `open_questions` and ask the user.

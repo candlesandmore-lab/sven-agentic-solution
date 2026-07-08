@@ -1,3 +1,8 @@
 # agent install artifacts
 .github/**
-.claude.**
+.claude/**
+agent-dev-agent/**
+.vscode/**
+
+# runtime
+.agent_building_agent/**
