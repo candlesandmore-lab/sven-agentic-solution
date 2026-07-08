@@ -39,7 +39,11 @@ story_task_plan:
         system_prompt, max_tokens) and generate its SDK, CLI (`tts narrative
         run-nightly`), and MCP invocation surfaces per the implementation spec's
         Interface Contracts. MCP tools are registered in this workspace's own local MCP
-        server/config, not packaged as a distributable instructed-agent asset.
+        server/config, not packaged as a distributable instructed-agent asset. Per the
+        task_2 review checkpoint's deferred finding, decide and implement whether
+        ClusterRecord.topic_embedding (an internal matching-algorithm field) is excluded
+        from get_clusters/CLI/MCP responses via a separate trader-facing view model, or
+        retained; do not let it pass through to the Discovery Surface unexamined.
       prerequisite_artifacts:
         - task_2_coded_agent_pipeline
     - id: task_4_discovery_surface_dashboard

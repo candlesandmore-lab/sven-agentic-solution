@@ -117,9 +117,23 @@ story:
         agentic-trading-solutions uv workspace, `tts --help` runs via the installed console
         script, the FastMCP server module instantiates, and smoke tests pass (2 passed),
         confirming imports work and logging writes to stderr/file only, never stdout.
-      - Design and implement nightly FMP data ingestion to retrieve earnings reports, SEC
-        filings, and news per ticker.
-      - Develop topic-modeling extraction and clustering workflow from ingested narrative data.
+      - task_2_coded_agent_pipeline, owner coded-subagent-creation-agent via the
+        coded-subagent-creation skill -- implemented the Narrative Extraction and Clustering
+        Pipeline coded agent under src/technical_trader_solution/coded_agents/ (a
+        self-contained base.py runtime -- LangGraph generate/evaluate flow, task-id keyed
+        SQLite state persistence, 5-iteration refine cap, file logging -- plus
+        narrative_clusters_agent/{models,storage,fetch,extract,cluster,label,trend,agent}.py
+        implementing fetch, extract, cluster (BERTopic plus the Jaccard/cosine
+        cluster-identity matching algorithm), label (one bounded Anthropic call per
+        cluster), trend, and persist exactly per the implementation spec. Added
+        tests/fixtures/narrative_clusters/documents.yaml and prior_run_clusters.yaml, and
+        tests/unit/test_cluster_matching.py plus test_narrative_clusters_agent.py (marked
+        live_endpoint). Verified end to end against the two-topic fixture with a real
+        Anthropic label call, not merely tests passing -- the pipeline correctly split six
+        tickers into two clusters matching the fixture's two planted topics, CEG/NVDA/VST
+        labeled "AI datacenter power surge" and IONQ/QBTS/RGTI labeled "Quantum computing
+        progress and milestones", with correct frequency_of_mention and company_breadth.
+        All 7 suite tests pass.
       - Integrate clustering logic into the Technical Trader Solution.
       - Implement narrative cluster surface with topic-label storyline, frequency, and breadth
         displays.
@@ -195,5 +209,20 @@ story:
           cycle-free dependency order. One minor, deferrable note about fixture-count
           specificity accepted as-is. Task plan file:
           development/backlog/active/001-narrative-cluster-discovery-surface-task-plan.yaml.
-    deferred_items: []
+      - severity: important
+        finding: Task_2 review checkpoint found ClusterRecord.topic_embedding (an internal
+          BERTopic vector used only by the cluster-identity matching algorithm) is returned
+          in the pipeline's run output and would be exposed through any SDK/CLI/MCP/
+          dashboard call that returns ClusterRecord objects as-is
+        resolution: >
+          Passed with deferred follow-up (task review-us-015-task2-coded-agent-v1,
+          2026-07-08): correctly scoped as a task_3 invocation-surface-wiring decision, not
+          a task_2 defect. Deferred into task_3's scope below rather than a new story,
+          since task_3 (owned by the same story) is the natural place to decide whether
+          get_clusters/CLI/MCP/dashboard responses exclude topic_embedding.
+    deferred_items:
+      - Task_3 must decide and implement whether ClusterRecord.topic_embedding is excluded
+        from SDK/CLI/MCP/dashboard-facing responses (for example via a separate
+        trader-facing view model) or retained as an acceptable internal field, before those
+        surfaces are considered complete.
   open_questions: []

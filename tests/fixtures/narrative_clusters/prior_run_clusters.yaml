@@ -1,0 +1,39 @@
+# Sample prior-run cluster set and candidate new-run clusters, used to exercise the
+# cluster-identity matching algorithm's Jaccard/cosine thresholds
+# (docs/implementation/01-narrative-cluster-discovery-surface.md, Storage section)
+# independently of BERTopic's real embedding output, per
+# tests/unit/test_cluster_matching.py.
+
+prior_clusters:
+  - cluster_id: cluster-0001
+    run_date: "2026-06-01"
+    topic_label: "AI datacenter power demand (prior)"
+    member_tickers: [NVDA, VST]
+    frequency_of_mention: 4
+    company_breadth: 2
+    topic_embedding: [1.0, 0.0, 0.0]
+  - cluster_id: cluster-0002
+    run_date: "2026-06-01"
+    topic_label: "quantum computing (prior)"
+    member_tickers: [IONQ, RGTI]
+    frequency_of_mention: 4
+    company_breadth: 2
+    topic_embedding: [0.0, 1.0, 0.0]
+
+match_test_cases:
+  - name: matches_ai_datacenter_cluster_by_adding_a_member
+    member_tickers: [NVDA, VST, CEG]
+    topic_embedding: [0.95, 0.05, 0.0]
+    expected_cluster_id: cluster-0001
+  - name: matches_quantum_cluster_exactly
+    member_tickers: [IONQ, RGTI]
+    topic_embedding: [0.02, 0.98, 0.0]
+    expected_cluster_id: cluster-0002
+  - name: no_match_below_jaccard_threshold_mints_new_cluster
+    member_tickers: [TSLA, RIVN]
+    topic_embedding: [0.0, 0.0, 1.0]
+    expected_cluster_id: null
+  - name: high_ticker_overlap_but_low_topic_similarity_mints_new_cluster
+    member_tickers: [NVDA, VST]
+    topic_embedding: [0.0, 0.0, 1.0]
+    expected_cluster_id: null

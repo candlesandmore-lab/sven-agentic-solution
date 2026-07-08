@@ -4,8 +4,12 @@ version = "0.1.0"
 description = "Technical Trader Solution: agentic trading support tooling for the human trader."
 requires-python = ">=3.12"
 dependencies = [
+    "anthropic>=0.116.0",
+    "bertopic>=0.17.4",
     "click>=8.1",
     "fastmcp>=2.0",
+    "httpx>=0.28.1",
+    "langgraph>=1.2.8",
     "pydantic>=2.7",
 ]
 
@@ -15,6 +19,7 @@ tts = "technical_trader_solution.cli.main:app"
 [dependency-groups]
 dev = [
     "pytest>=8.0",
+    "pyyaml>=6.0",
 ]
 
 [build-system]

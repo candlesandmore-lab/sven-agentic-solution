@@ -1,0 +1,97 @@
+# Sample earnings-transcript, SEC-filing, and news documents covering two distinct
+# narrative topics across multiple tickers, per docs/implementation/
+# 01-narrative-cluster-discovery-surface.md's Validation Expectations. Used by
+# test_narrative_clusters_agent.py to exercise extraction, clustering, and trend
+# computation without a live FMP_API_KEY.
+
+documents:
+  # Topic 1: AI datacenter power demand
+  - ticker: NVDA
+    source_type: earnings_transcript
+    source_id: NVDA-transcript-1
+    published_at: "2026-06-01T00:00:00"
+    text: >
+      Datacenter demand for our GPU accelerators remains extremely strong as hyperscale
+      customers build out massive AI datacenter capacity. Power demand for these AI
+      datacenter buildouts is becoming a key constraint on deployment timelines.
+  - ticker: NVDA
+    source_type: news
+    source_id: NVDA-news-1
+    published_at: "2026-06-03T00:00:00"
+    text: >
+      Analysts note that AI datacenter power demand is accelerating faster than grid
+      capacity can be added, with GPU accelerator shipments tied directly to available
+      power.
+  - ticker: VST
+    source_type: earnings_transcript
+    source_id: VST-transcript-1
+    published_at: "2026-06-02T00:00:00"
+    text: >
+      We are seeing unprecedented power demand from AI datacenter operators seeking to
+      secure long-term power purchase agreements for new datacenter buildouts near our
+      generation capacity.
+  - ticker: VST
+    source_type: sec_filing
+    source_id: VST-filing-1
+    published_at: "2026-06-05T00:00:00"
+    text: >
+      Risk factors include the pace of AI datacenter power demand growth and our ability
+      to expand generation capacity to serve new datacenter customers.
+  - ticker: CEG
+    source_type: news
+    source_id: CEG-news-1
+    published_at: "2026-06-04T00:00:00"
+    text: >
+      The company signed a new power purchase agreement with a hyperscale AI datacenter
+      operator, citing surging datacenter power demand across its service territory.
+  - ticker: CEG
+    source_type: earnings_transcript
+    source_id: CEG-transcript-1
+    published_at: "2026-06-06T00:00:00"
+    text: >
+      Power demand from AI datacenter buildouts continues to exceed our prior forecasts,
+      and we are accelerating generation capacity additions to meet datacenter customers.
+
+  # Topic 2: quantum computing breakthroughs
+  - ticker: IONQ
+    source_type: earnings_transcript
+    source_id: IONQ-transcript-1
+    published_at: "2026-06-01T00:00:00"
+    text: >
+      We achieved a new milestone in qubit fidelity this quarter, advancing our quantum
+      computing roadmap toward commercially useful quantum computing applications.
+  - ticker: IONQ
+    source_type: news
+    source_id: IONQ-news-1
+    published_at: "2026-06-03T00:00:00"
+    text: >
+      The quantum computing company announced a breakthrough in qubit error correction,
+      a key step toward scalable quantum computing hardware.
+  - ticker: RGTI
+    source_type: earnings_transcript
+    source_id: RGTI-transcript-1
+    published_at: "2026-06-02T00:00:00"
+    text: >
+      Our quantum computing chip achieved higher qubit coherence times, supporting our
+      quantum computing roadmap and near-term quantum computing commercial contracts.
+  - ticker: RGTI
+    source_type: sec_filing
+    source_id: RGTI-filing-1
+    published_at: "2026-06-05T00:00:00"
+    text: >
+      Risk factors include the pace of qubit fidelity improvement required for
+      commercially viable quantum computing systems.
+  - ticker: QBTS
+    source_type: news
+    source_id: QBTS-news-1
+    published_at: "2026-06-04T00:00:00"
+    text: >
+      The quantum computing firm demonstrated a new qubit annealing approach, advancing
+      quantum computing toward practical optimization applications.
+  - ticker: QBTS
+    source_type: earnings_transcript
+    source_id: QBTS-transcript-1
+    published_at: "2026-06-06T00:00:00"
+    text: >
+      Quantum computing qubit counts continue to scale, and we see growing enterprise
+      interest in our quantum computing annealing systems.

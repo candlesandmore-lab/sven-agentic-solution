@@ -13,3 +13,8 @@ __pycache__/
 *.pyc
 .venv/
 dist/
+
+# technical_trader_solution runtime data
+.coded_agent_state/
+data/
+*.log
