@@ -30,8 +30,16 @@ story:
       made after chart inspection; the Technical Trader Solution must never automatically create
       a theme from narrative clustering alone.
   architecture_options:
-    - option: Modular architecture where narrative extraction (agent-based or scheduled batch),
-        topic-modeling clustering, and visualization are separate, loosely-coupled components.
+    - option: Fixed nightly pipeline (fetch from FMP, extract, topic-model, label, persist),
+        classified solution_surface coded_agent, feeding a separate Discovery Surface
+        presentation component. Chosen; see docs/architecture/01-technical-trader-solution.md
+        Operating Decision Record.
+      alternatives_considered:
+        - Flexible/exploratory frontier-reasoning step judging narrative connections case by
+          case; rejected as too slow and costly to run nightly across the full eligible
+          universe, confirmed with the human trader on 2026-07-08.
+        - Fixed pipeline now with a flexible reasoning step deferred to a follow-up story;
+          available if the fixed pipeline later proves too coarse for a narrow ticker subset.
   implementation_options:
     - option: Use the FMP API to source raw earnings reports, SEC filings, and news for target
         tickers on a nightly batch cadence. Apply topic modeling to derive narrative clusters
@@ -40,7 +48,8 @@ story:
   repository_context:
     branch: sven_input
     base_commit: 98606b1622f93af7aec090557993d53c3143f62c
-  current_implementation: {}
+  current_implementation:
+    architecture_document: docs/architecture/01-technical-trader-solution.md
   guidelines:
     - All clustering is based strictly on shared or adjacent narrative/topic, without regard to
       quantitative pair bonds, sync signals, or existing theme membership (MB-013's reverse path).
@@ -71,6 +80,9 @@ story:
       patterns invisible in traditional pair or theme-based analytics.
   development_cycle:
     steps:
+      - Author docs/architecture/01-technical-trader-solution.md as the first architecture pass,
+        covering component topology, solution_surface classification (coded_agent), and the
+        fixed nightly pipeline decision, confirmed with the human trader.
       - Design and implement nightly FMP data ingestion to retrieve earnings reports, SEC
         filings, and news per ticker.
       - Develop topic-modeling extraction and clustering workflow from ingested narrative data.
@@ -102,5 +114,15 @@ story:
           batch cadence aligned with existing bond-network computation, (3) short topic label or
           summary for displayed storylines. Incorporated into success_criteria and guidelines;
           open_questions cleared.
+      - severity: info
+        finding: Architecture review gate (docs/architecture/01-technical-trader-solution.md,
+          docs/README.md index update, story architecture_options/current_implementation)
+        resolution: >
+          Passed with deferred follow-up (task review-us-015-architecture-v1, 2026-07-08).
+          Solution-surface classification coded_agent confirmed correctly justified via the
+          two-part test; STR-011/MB-020 consistency confirmed; docs/README.md index update
+          confirmed; vocabulary compliance confirmed. One non-blocking, deferred cosmetic
+          note about the Component Topology diagram format did not require a change (the
+          document already uses a fenced mermaid code block).
     deferred_items: []
   open_questions: []

@@ -24,3 +24,7 @@ The methodology corpus is now linked from this index for quick navigation:
 - [methodology/market-behavior.md](methodology/market-behavior.md) — observable market behaviors.
 - [methodology/roles.md](methodology/roles.md) — role definitions used in the corpus.
 - [methodology/trading-strategies.md](methodology/trading-strategies.md) — trading responses to observed behaviors.
+
+## Architecture document lookup
+
+- [architecture/01-technical-trader-solution.md](architecture/01-technical-trader-solution.md) — Technical Trader Solution architecture foundations, component topology, and solution-surface classification, established with story 001 (US-015 Narrative-Cluster Discovery Surface).
