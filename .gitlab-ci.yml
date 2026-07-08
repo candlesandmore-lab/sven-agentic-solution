@@ -1,0 +1,21 @@
+stages:
+  - setup
+  - test
+
+setup:
+  stage: setup
+  image: python:3.12
+  script:
+    - pip install uv
+    - uv sync
+  artifacts:
+    paths:
+      - .venv
+
+test:
+  stage: test
+  image: python:3.12
+  needs: ["setup"]
+  script:
+    - pip install uv
+    - uv run pytest

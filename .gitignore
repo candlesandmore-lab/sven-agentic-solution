@@ -6,3 +6,10 @@ agent-dev-agent/**
 
 # runtime
 .agent_building_agent/**
+
+# python
+.pytest_cache/
+__pycache__/
+*.pyc
+.venv/
+dist/

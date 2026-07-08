@@ -1,8 +1,31 @@
 [project]
-name = "sven-agentic-solution"
+name = "technical-trader-solution"
 version = "0.1.0"
+description = "Technical Trader Solution: agentic trading support tooling for the human trader."
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "click>=8.1",
+    "fastmcp>=2.0",
+    "pydantic>=2.7",
+]
+
+[project.scripts]
+tts = "technical_trader_solution.cli.main:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/technical_trader_solution"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
+markers = [
+    "live_endpoint: test exercises a real external endpoint instead of a mock or fixture-only path",
+]
