@@ -17,7 +17,9 @@ records *what happened, who/what did it, and why decisions were made*.
 | 7 | task_2 coded agent | "continue with task_2" | narrative-clusters-agent implemented, verified live | `f491a23` |
 | 8 | Chat log (first pass) | "Please summarize this chat..." | this file created | — |
 | 9 | task_3 invocation surfaces | "Please implement task_3" | SDK/CLI/MCP wired, 2 corrections, 1 bugfix | `80d9114` |
-| 10 | Chat log (this update) | "Add the steps ... for task_3" | this section | — |
+| 10 | Chat log (update for task_3) | "Add the steps ... for task_3" | this section | — |
+| 11 | task_4 dashboard | "Use agent-dev-agent to implement task_4..." | Discovery Surface page + `tts dashboard serve`, browser-verified, review passed after fixing a framework bug | `78086fe` |
+| 12 | Chat log (this update) | "Add the summary of this chat to development/todos/001-chat.md" | this section | — |
 
 ---
 
@@ -281,6 +283,101 @@ review failures, not a manual edit.
 
 ---
 
+## Step 11 — task_4: Discovery Surface Dashboard
+
+**User input:** "Use agent-dev-agent to implement task_4 from
+development/backlog/active/001-narrative-cluster-discovery-surface-task-plan.yaml (Next
+per the task plan is task_4: the Streamlit + Plotly Discovery Surface dashboard page and
+tts dashboard serve.)"
+
+**Infrastructure note — `agent-dev-agent` is not a spawnable subagent in this harness:**
+the `Agent` tool rejected `subagent_type: "agent-dev-agent"` (only `claude`,
+`claude-code-guide`, `Explore`, `general-purpose`, `Plan`, `statusline-setup` are
+registered). **Adapted:** the top-level session adopted the `agent-dev-agent` persona
+directly by reading its `.claude/agents/agent-dev-agent.md` definition and routing through
+its own mandated entry point — the `development-flow` skill, then reading
+`sub-skills/story-implementation-flow/SKILL.md` directly (the `Skill` tool does not
+resolve sub-skill names, only top-level skill names; sub-skill paths are meant to be
+`Read`, not re-invoked). Per the delegation map, task_4's owner (`python-creation-agent`)
+is an *instructed* agent, delegated to directly (persona + `python-creation` skill read
+in-session) rather than through `coded_agent_invoke`, which is reserved for the four
+*coded* agents.
+
+**Skill used:** `development-flow` → `story-implementation-flow` (read directly) →
+`python-creation` → `package-layout` + `interface-rules` sub-skills.
+
+**Built:** `dashboard/discovery_surface.py` (Streamlit + Plotly): cluster list with topic
+label, frequency/breadth, and a trend sparkline sourced only from
+`sdk.narrative_clusters.get_clusters`/`get_cluster_trend`; an "Inspect charts" button opens
+a side-by-side (one column per member ticker) price-history view. `core/market_data.py`
+(`fetch_historical_prices`) for that chart view's FMP historical-price data — kept
+independent of the narrative_clusters agent's own `FMPClient` since it is not part of that
+SDK's contract. `cli/dashboard.py` (`tts dashboard serve`, launching `streamlit run` as a
+subprocess, forwarding `--db-path`/`--log-file`/`--log-level` after `--`), wired into
+`cli/main.py`. Added `streamlit`/`plotly` to `pyproject.toml`.
+
+**Verification — browser-driven, not just code review:** used the `run` skill; no
+project-specific run skill existed, so it fell back to the generic Playwright pattern.
+`chromium-cli` was unavailable, so installed the `playwright` npm package directly and
+matched its exact required Chromium build (`chromium-1140`) rather than the version `npx
+playwright` initially resolved, avoiding a mismatched-binary launch failure. Also hit and
+fixed a first-run Streamlit onboarding prompt that blocked server startup on stdin
+(pre-seeded `~/.streamlit/credentials.toml`). Seeded a fixture SQLite store with one
+multi-ticker cluster, launched `tts dashboard serve`, and drove it with a headless-Chromium
+script: confirmed the cluster list renders topic label/members/frequency/breadth/sparkline;
+clicking "Inspect charts" reveals one column per member ticker; enumerated every on-page
+`<button>` and confirmed none reference theme creation (STR-011); confirmed graceful
+(warning, not crash) degradation without `FMP_API_KEY`; zero console errors. Separately
+verified `fetch_historical_prices`'s FMP-response parsing against a mocked `httpx`
+transport. Cleaned up smoke-test artifacts; full existing 11-test suite still passed.
+
+**MCP tools:** `coded_agent_invoke(review-validation-agent)` — task_4 checkpoint, 4
+attempts across two distinct problem classes:
+- v1/v2 (via `coded_agent_invoke`) and two CLI-path retries → all failed identically with
+  an Anthropic SDK transport error, "Streaming is required for operations that may take
+  longer than 10 minutes" — **not a content problem**: reproduced with a trivial 3-field
+  payload, so the cause had to be static configuration, not prompt size.
+- v3 (after the config fix below) → **blocked**, correctly: 4 blocking findings reporting
+  "no reviewable content provided" — a **different, self-inflicted problem**: the input
+  keys used (`story_id`/`summary`/`checkpoint`) did not match what
+  `review-validation-agent`'s prompt template actually reads
+  (`review_target`/`content_excerpt`/`active_story`/`answers`, found by reading the
+  installed package's source at `agent_building_agent/coded_agents/review_validation/
+  agent.py` — the skill docs describe the severity model, not the exact input schema).
+- v4 (correct input shape, real story `success_criteria`/guidelines plus the three new
+  files' full source embedded instead of a prose summary) → **pass** (12 findings, all
+  informational).
+
+**Bug diagnosed and fixed (with user approval, not silently) — `agent-building-agent`'s
+own framework config, not this story's code:** read the Anthropic SDK's
+`_calculate_nonstreaming_timeout` source directly to find the exact rule:
+`expected_time = 3600 * max_tokens / 128_000`, must not exceed 600s; `claude-sonnet-4-5` is
+not in the SDK's `MODEL_NONSTREAMING_TOKENS` override dict, so only that time formula
+applies (mathematical ceiling: `max_tokens <= 21333`). `coded-agent-config.yaml` had
+`review-validation-agent.max_tokens: 65536`, ~3x over. **Asked the user** ("How low do I
+need to set max_tokens...?") rather than editing this framework-owned file unilaterally;
+computed the exact threshold and recommended 16000–20000 for margin; user confirmed
+("yes") before the edit was made.
+
+**Output:** `dashboard/{__init__.py,discovery_surface.py}`, `cli/dashboard.py`,
+`core/market_data.py`, `cli/main.py` wired, `pyproject.toml` deps, `coded-agent-config.yaml`
+`max_tokens` fix, story YAML `development_cycle`/`review_findings` updated with the full
+honest account (including the v1–v3 failures, not just the v4 pass). `validate_yaml`,
+`git_repository_context` (status/log/show), `git_staging`, `git_commit_workflow` — single
+commit bundling implementation + framework-config fix + story-log updates. Commit
+`78086fe`.
+
+---
+
+## Step 12 — Chat Log (This Update)
+
+**User input:** "Add the summary of this chat to development/todos/001-chat.md"
+
+**Output:** this file, adding step 11 (task_4) and this step. Left uncommitted, same as
+prior chat-log passes — for the user to decide.
+
+---
+
 ## Patterns for trainees
 
 - **Skill tool** was used once per development-flow phase (`development-flow`,
@@ -304,3 +401,24 @@ review failures, not a manual edit.
   the new interface tests ran alongside the existing suite, not in isolation.
 - **Coded-agent infrastructure failures (empty output, truncation) get retried with a new
   task_id and a trimmed request, not treated as a scope or content problem.**
+- **Not every named agent in the delegation map is a spawnable subagent.** `agent-dev-agent`
+  and the *instructed* specialists (`python-creation-agent`, `architect-planning-agent`,
+  `coded-subagent-creation-agent`) are personas the top-level session adopts by reading
+  their `.md` files and skills directly; only the four *coded* agents go through
+  `coded_agent_invoke`. Confirm which kind before trying to spawn one as a `Task`/`Agent`.
+- **When a skill's own doc points at a sub-skill path, `Read` it — don't re-invoke the
+  `Skill` tool with that path as a name.** Only top-level skill names resolve there.
+- **Diagnose infrastructure failures by reading the installed package's actual source, not
+  by guessing from symptoms.** The streaming-timeout error was solved by reading Anthropic
+  SDK's `_calculate_nonstreaming_timeout` for its exact formula; the follow-on "blocked"
+  result was solved by reading `agent_building_agent`'s own `review_validation/agent.py`
+  for the exact input keys its prompt template reads. Two different failures, two
+  different fixes — don't treat a schema mismatch as the same class of bug as a transport
+  error just because they both came from the same tool call.
+- **Never edit `agent-building-agent`'s own framework config unilaterally**, even when the
+  fix is obvious and the math is exact — compute the answer, then ask.
+- **UI changes get driven in an actual browser, not just read as code.** No project-specific
+  `run` skill existed for this repo, so the generic Playwright fallback pattern was used;
+  when the specified driver (`chromium-cli`) isn't installed, install the real one
+  (`playwright` npm package) and match its exact required browser build rather than
+  accepting whatever version a bare `npx` install resolves to.
