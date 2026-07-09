@@ -10,7 +10,9 @@ dependencies = [
     "fastmcp>=2.0",
     "httpx>=0.28.1",
     "langgraph>=1.2.8",
+    "plotly>=5.24",
     "pydantic>=2.7",
+    "streamlit>=1.38",
 ]
 
 [project.scripts]

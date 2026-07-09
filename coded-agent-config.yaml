@@ -24,7 +24,7 @@ coded_agents:
       base_url: https://api.anthropic.com
       api_key_env: ANTHROPIC_API_KEY
     model: claude-sonnet-4-5
-    max_tokens: 65536
+    max_tokens: 16000
     system_prompt: |
       You are the review and validation coded agent. Execute review steps, produce findings,
       and emit gate decisions according to the severity model and gate states in
@@ -38,7 +38,7 @@ coded_agents:
       base_url: https://open.bigmodel.cn/api/paas/v4
       api_key_env: ZAI_API_KEY
     model: glm-5.2
-    max_tokens: 65536
+    max_tokens: 16000
     system_prompt: |
       You are the instructed-agent creation coded agent. Generate agent markdown, skill, and
       sub-skill assets following the repository layout, naming conventions, and authoring

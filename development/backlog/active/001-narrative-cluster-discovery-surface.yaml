@@ -4,7 +4,7 @@ story:
   title: Narrative-Cluster Discovery Surface
   state: active
   created_on: 2026-07-08
-  last_updated_on: 2026-07-08
+  last_updated_on: 2026-07-09
   source_todo:
     - development/todos/001-trial-US-015.md
   actor: human trader
@@ -154,6 +154,31 @@ story:
         displays.
       - Enable navigation from cluster results to side-by-side chart inspection of cluster
         tickers.
+      - task_4_discovery_surface_dashboard, owner python-creation-agent via the python-creation
+        skill -- built the Streamlit + Plotly Discovery Surface page
+        (src/technical_trader_solution/dashboard/discovery_surface.py) and the `tts dashboard
+        serve` CLI entry point (cli/dashboard.py, launching `streamlit run` as a subprocess and
+        forwarding --db-path/--log-file/--log-level after `--`). The page calls only
+        sdk.narrative_clusters.get_clusters/get_cluster_trend for all cluster data (topic_label,
+        member_tickers, frequency_of_mention, company_breadth, trend sparkline) and never
+        queries NarrativeClustersStore/SQLite directly. An "Inspect charts" button reveals a
+        side-by-side (one st.columns per member ticker) Plotly price-history view, sourced from
+        a new core/market_data.py (fetch_historical_prices) calling FMP's historical-price-full
+        endpoint directly -- the Discovery Surface's own data-access contract distinguishes this
+        from the SDK-only cluster-data path, since FMP historical prices are not part of the
+        narrative_clusters SDK's contract. No theme-creation control exists anywhere on the
+        page, per STR-011. Added streamlit/plotly to pyproject.toml. Verified end to end with a
+        browser-driven Playwright smoke test against a seeded fixture store (not merely a code
+        read) -- cluster list renders topic_label/members/frequency/breadth/sparkline correctly;
+        clicking "Inspect charts" reveals per-member-ticker columns; enumerated every on-page
+        button and confirmed none reference theme creation; confirmed graceful (warning, not
+        crash) degradation with FMP_API_KEY unset; zero browser console errors. Separately
+        verified fetch_historical_prices's FMP-response parsing/oldest-first ordering against a
+        mocked httpx transport. Smoke-test artifacts cleaned up (data/ is gitignored). The
+        task_4 review checkpoint passed clean (task review-us-015-task4-dashboard-v4,
+        2026-07-09) after resolving an agent-building-agent runtime defect encountered along
+        the way -- see review_findings below for the full account. task_5_qa_validation has
+        not been started.
     review_findings:
       - severity: blocking
         finding: Tech-restricted term 'agentic'/'agent' appeared in functional success_criteria
@@ -248,5 +273,35 @@ story:
           packaging. First review-agent call (v1) failed after 5 iterations with empty
           model output when asked to read_docs four files; resolved by retrying (v2) with
           the same summary inlined and no read_docs instruction, not by changing scope.
+      - severity: info
+        finding: Task_4 review checkpoint (Discovery Surface dashboard page and `tts dashboard
+          serve` CLI entry point) against the story's success criteria (no automated theme
+          creation, STR-011 compliance, SDK-only data access)
+        resolution: >
+          Passed clean (task review-us-015-task4-dashboard-v4, 2026-07-09): SDK-only
+          cluster-data access confirmed (discovery_surface.py calls only
+          sdk.narrative_clusters.get_clusters/get_cluster_trend, never
+          NarrativeClustersStore/SQLite); STR-011 compliance confirmed (no theme-creation
+          control anywhere on the page, verified by enumerating every on-page button);
+          member-ticker price charts confirmed sourced from FMP via the new
+          core/market_data.py, kept independent of the narrative_clusters agent's own
+          FMPClient; Streamlit subprocess launch convention, graceful FMP_API_KEY-unset
+          degradation, and CLI registration all confirmed sound. All twelve findings
+          informational; no blocking, important, or minor issues. Attempts v1-v3
+          (2026-07-09) failed before reaching this content: v1-v2 (via the
+          coded_agent_invoke MCP tool) and the CLI-path retries all hit an
+          agent-building-agent runtime defect ("Streaming is required for operations that
+          may take longer than 10 minutes") caused by review-validation-agent's
+          max_tokens=65536 on claude-sonnet-4-5 in agent-building-agent's own
+          coded-agent-config.yaml exceeding the Anthropic SDK's non-streaming timeout
+          budget; resolved by lowering max_tokens to 16000 (per the human trader's
+          direction) -- a fix to agent-building-agent's own framework config, not a
+          story-001-owned file. v3 (after the max_tokens fix) then failed for an unrelated
+          reason: the input payload didn't match review-validation-agent's actual expected
+          input keys (review_target/content_excerpt/active_story/answers), so it correctly
+          found "no reviewable content provided" and returned gate_result.state=blocked;
+          v4 resubmitted with the correct input shape, embedding the actual story
+          success_criteria/guidelines and the three new source files' full contents rather
+          than a prose summary, and passed.
     deferred_items: []
   open_questions: []

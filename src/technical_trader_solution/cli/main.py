@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import click
 
+from technical_trader_solution.cli.dashboard import dashboard
 from technical_trader_solution.cli.narrative_clusters import narrative
 
 __all__ = ["app"]
@@ -35,3 +36,4 @@ def mcp_serve() -> None:
 
 app.add_command(narrative)
 app.add_command(mcp_group)
+app.add_command(dashboard)
