@@ -61,3 +61,30 @@ class ClusterTrendSnapshot(BaseModel):
     run_date: date
     frequency_of_mention: int
     company_breadth: int
+
+
+class ClusterView(BaseModel):
+    """Trader-facing view of a cluster: `ClusterRecord` without `topic_embedding`.
+
+    Per the task_2 review checkpoint's deferred finding, the SDK, CLI, MCP, and Discovery
+    Surface all expose this view, never the raw `ClusterRecord` -- the topic embedding is
+    an internal cluster-identity-matching detail, not trader-facing information.
+    """
+
+    cluster_id: str
+    run_date: date
+    topic_label: str
+    member_tickers: list[str]
+    frequency_of_mention: int
+    company_breadth: int
+
+    @classmethod
+    def from_record(cls, record: ClusterRecord) -> "ClusterView":
+        return cls(
+            cluster_id=record.cluster_id,
+            run_date=record.run_date,
+            topic_label=record.topic_label,
+            member_tickers=record.member_tickers,
+            frequency_of_mention=record.frequency_of_mention,
+            company_breadth=record.company_breadth,
+        )

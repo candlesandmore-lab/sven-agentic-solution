@@ -134,6 +134,21 @@ story:
         labeled "AI datacenter power surge" and IONQ/QBTS/RGTI labeled "Quantum computing
         progress and milestones", with correct frequency_of_mention and company_breadth.
         All 7 suite tests pass.
+      - task_3_invocation_surface_wiring, owner python-creation-agent via the python-creation
+        skill -- generated SDK (technical_trader_solution/sdk/narrative_clusters.py), CLI
+        (tts narrative run-nightly/show-clusters/show-trend, tts mcp serve), and MCP
+        (narrative_run_nightly_pipeline/get_clusters/get_cluster_trend, registered in
+        .mcp.json) invocation surfaces, all reusing the same core functions. Corrected the
+        implementation spec's runtime-config mechanism from a section in
+        agent-building-agent's own coded-agent-config.yaml (closed to its four framework
+        agents) to a new tts-coded-agent-config.yaml, loaded by
+        coded_agents/config.py. Resolved the task_2 review's deferred finding by adding
+        ClusterView (excludes topic_embedding) as what every surface returns. Found and
+        fixed a state-isolation bug during interface testing -- task-id state defaulted to
+        a workspace-global path, so re-running with a shared task_id resumed an unrelated
+        prior run's stale state; fixed by co-locating state with db_path. Added
+        tests/{sdk,cli,mcp}/test_narrative_clusters_*.py (marked live_endpoint), each
+        confirming topic_embedding never appears in a response. All 11 suite tests pass.
       - Integrate clustering logic into the Technical Trader Solution.
       - Implement narrative cluster surface with topic-label storyline, frequency, and breadth
         displays.
@@ -220,9 +235,18 @@ story:
           a task_2 defect. Deferred into task_3's scope below rather than a new story,
           since task_3 (owned by the same story) is the natural place to decide whether
           get_clusters/CLI/MCP/dashboard responses exclude topic_embedding.
-    deferred_items:
-      - Task_3 must decide and implement whether ClusterRecord.topic_embedding is excluded
-        from SDK/CLI/MCP/dashboard-facing responses (for example via a separate
-        trader-facing view model) or retained as an acceptable internal field, before those
-        surfaces are considered complete.
+      - severity: info
+        finding: Task_3 review checkpoint (SDK/CLI/MCP wiring, coded-agent-config.yaml
+          correction, state-isolation bugfix)
+        resolution: >
+          Passed clean (task review-us-015-task3-invocation-surfaces-v2, 2026-07-09).
+          ClusterView confirmed to fully resolve the task_2 deferred finding across all
+          three surfaces; the tts-coded-agent-config.yaml correction confirmed justified
+          and does not leave the agent's model/prompt unconfigurable; the state-isolation
+          bugfix confirmed sound; CLI/SDK/MCP confirmed aligned; local .mcp.json
+          registration confirmed consistent with local tooling, not distributable
+          packaging. First review-agent call (v1) failed after 5 iterations with empty
+          model output when asked to read_docs four files; resolved by retrying (v2) with
+          the same summary inlined and no read_docs instruction, not by changing scope.
+    deferred_items: []
   open_questions: []

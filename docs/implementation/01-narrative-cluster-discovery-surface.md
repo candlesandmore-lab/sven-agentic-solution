@@ -117,6 +117,10 @@ Surface page of the Technical Trader Solution's local web dashboard (see
   These thresholds are a starting point, not a corpus-derived constant; they may be tuned during
   implementation execution based on fixture and demo behavior, recorded as a task-plan or QA
   finding rather than silently changed.
+- Coded-agent task-id state (for the refine/evaluator loop, not the nightly data itself) is
+  co-located with the data store at `<db_path's directory>/narrative-clusters-agent-state.sqlite`,
+  not a workspace-global path, so two agents pointed at different `db_path` values (for example
+  separate test runs) never share or collide on persisted task state.
 
 ## Topic-Modeling Library
 
@@ -153,31 +157,62 @@ Surface page of the Technical Trader Solution's local web dashboard (see
 
 Per the mandatory SDK/CLI/MCP generation rule for a shared core Python layer:
 
-- Core Python layer: `narrative_clusters` package exposing `run_nightly_pipeline(as_of: date)`,
-  `get_clusters(run_date: date | None)`, and `get_cluster_trend(cluster_id: str)`.
+- Core Python layer: `narrative_clusters` package (`technical_trader_solution.coded_agents.
+  narrative_clusters_agent`) exposing `run_nightly_pipeline(tickers, run_date=None)`,
+  `get_clusters(run_date=None)`, and `get_cluster_trend(cluster_id)` from
+  `technical_trader_solution.sdk.narrative_clusters`. All three return or accept
+  `ClusterView` (or its plain-dict dump), never the internal `ClusterRecord` -- see
+  Trader-Facing View below.
 - CLI command-line entry point: `tts` (Technical Trader Solution) -- the canonical short name
   for this workspace's own CLI, distinct from `agent-building-agent`'s own CLI. Introduced here
   because story 001 is the first capability to need one; later stories reuse `tts` rather than
   inventing a new prefix.
-- SDK: same functions re-exported from the Technical Trader Solution's SDK surface.
+- SDK: `technical_trader_solution.sdk.narrative_clusters` re-exports the core functions.
   Status: generated.
-- CLI: `tts narrative run-nightly` (triggers a pipeline run) and `tts dashboard serve` (launches
-  the Discovery Surface page locally). Status: generated.
-- MCP: `narrative_clusters` tools (`run_nightly_pipeline`, `get_clusters`, `get_cluster_trend`)
-  registered as a new coded-agent section in this workspace's own `coded-agent-config.yaml` and
-  exposed through this workspace's own local MCP server (the same mechanism already registered
-  in `.mcp.json` for the four agent-dev-agent coded agents), so the human trader (or a future
-  local orchestrator) can call them from this machine. Status: generated. This is registration
-  within this workspace's own local tooling, not the separate "distributable instructed-agent
-  asset" packaging concept (rendering agent.md/SKILL.md assets into other developers'
-  vs-code-ghcp/vs-code-claude/cli-cline workspaces) -- the Technical Trader Solution is not
-  being packaged for redistribution to other developers in story 001, so INSTALL.md and
-  framework-target rendering do not apply here; only this workspace's own local MCP
-  registration does, and it is required, not optional.
+- CLI: `tts narrative run-nightly`, `tts narrative show-clusters`, `tts narrative show-trend
+  <cluster_id>` (read commands added in task_3 to keep CLI/SDK/MCP aligned per the
+  interface-rules sub-skill), and `tts mcp serve` (launches this workspace's own MCP server).
+  `tts dashboard serve` is task_4's addition. Status: generated.
+- MCP: `narrative_run_nightly_pipeline`, `narrative_get_clusters`, `narrative_get_cluster_trend`
+  tools registered on this workspace's own FastMCP server
+  (`technical_trader_solution.mcp.server`, launched via `tts mcp serve`) and registered in
+  this workspace's `.mcp.json` alongside `agent-building-agent`'s own server entry, so the
+  human trader (or a future local orchestrator) can call them from this machine. Status:
+  generated. This is registration within this workspace's own local tooling, not the separate
+  "distributable instructed-agent asset" packaging concept (rendering agent.md/SKILL.md
+  assets into other developers' vs-code-ghcp/vs-code-claude/cli-cline workspaces) -- the
+  Technical Trader Solution is not being packaged for redistribution to other developers in
+  story 001, so INSTALL.md and framework-target rendering do not apply here; only this
+  workspace's own local MCP registration does, and it is required, not optional.
 - Prompt contract (label node): input is a cluster's top keyphrases plus up to three
   representative excerpts; output is exactly one short topic label string (no JSON wrapper
   needed since the label node's output is a single string, unlike the four framework coded
   agents' structured JSON payloads).
+
+### Coded-agent runtime configuration correction (task_3)
+
+The implementation spec originally said the coded agent would be "registered as a new
+section in this workspace's `coded-agent-config.yaml`" -- that file is
+`agent-building-agent`'s own runtime configuration, and its loader validates `coded_agents`
+keys against a closed set of its four framework agents (story-telling-agent,
+review-validation-agent, instructed-agent-creation-agent, qa-agent); it cannot and should
+not be extended with a deliverable's own coded agents. Corrected in task_3: a new,
+separate `tts-coded-agent-config.yaml` at the workspace root (loaded by
+`technical_trader_solution.coded_agents.config`) carries the same shape -- one YAML file, a
+section per Technical Trader Solution coded agent, LLM endpoint + model + user-reviewable
+system prompt -- for the same reason that pattern exists (a trader can change model or
+prompt without touching code), scoped correctly to this deliverable. Absence of the file,
+or of a given agent's section in it, is not an error: every coded agent falls back to its
+own hardcoded default model and system prompt.
+
+### Trader-Facing View
+
+Per the task_2 review checkpoint's deferred finding: `ClusterRecord.topic_embedding` (the
+internal matching-algorithm field) must never reach a consumer outside the coded agent
+itself. `ClusterView` (same fields as `ClusterRecord` minus `topic_embedding`) is what the
+coded agent's own run output, the SDK, the CLI, and the MCP tools all return; the full
+`ClusterRecord` (with embedding) is persisted to storage for the next run's identity
+matching and never leaves it.
 
 ## Validation Expectations
 
@@ -233,3 +268,13 @@ Per the mandatory SDK/CLI/MCP generation rule for a shared core Python layer:
   local-workspace tooling, not distributable-asset packaging (Interface Contracts), specified the
   dashboard's SDK-only data-access contract (Discovery Surface), and added concrete fixture file
   paths (Validation Expectations).
+- v0.4 (2026-07-09) -- task_3 (invocation-surface wiring): corrected the coded-agent runtime
+  configuration mechanism from a `coded-agent-config.yaml` section (that file is scoped to
+  `agent-building-agent`'s own four framework agents and cannot be extended) to a new, separate
+  `tts-coded-agent-config.yaml` (Interface Contracts); added the `ClusterView` trader-facing model
+  excluding `topic_embedding` from every SDK/CLI/MCP response, resolving the task_2 review
+  checkpoint's deferred finding (new Trader-Facing View section); added `tts narrative
+  show-clusters`/`show-trend` read commands and `tts mcp serve` for CLI/SDK/MCP alignment
+  (Interface Contracts); fixed a state-isolation bug found during interface testing where
+  task-id state defaulted to a workspace-global path instead of one co-located with `db_path`,
+  causing an unrelated prior run's state to be resumed (Storage section).

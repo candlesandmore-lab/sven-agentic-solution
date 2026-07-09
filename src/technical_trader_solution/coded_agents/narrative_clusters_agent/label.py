@@ -45,14 +45,22 @@ def generate_topic_label(
     *,
     client: anthropic.Anthropic | None = None,
     model: str = DEFAULT_MODEL,
+    system_prompt: str = _SYSTEM_PROMPT,
+    max_tokens: int = 32,
 ) -> str:
-    """Call the configured model once to produce a short topic label for one cluster."""
+    """Call the configured model once to produce a short topic label for one cluster.
+
+    `model`, `system_prompt`, and `max_tokens` default to this module's own constants but
+    are normally overridden by `tts-coded-agent-config.yaml`'s `narrative-clusters-agent`
+    section (see `NarrativeClustersAgent.__init__`), so a trader can change them without
+    touching code.
+    """
 
     resolved_client = client or anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
     response = resolved_client.messages.create(
         model=model,
-        max_tokens=32,
-        system=_SYSTEM_PROMPT,
+        max_tokens=max_tokens,
+        system=system_prompt,
         messages=[{"role": "user", "content": _build_user_prompt(top_keyphrases, excerpts)}],
     )
     label = "".join(block.text for block in response.content if block.type == "text").strip()

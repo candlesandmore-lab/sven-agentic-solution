@@ -1,0 +1,25 @@
+# Runtime configuration for the Technical Trader Solution's own coded agents.
+# Separate from this repository's coded-agent-config.yaml, which configures
+# agent-building-agent's four development-flow coded agents only -- see
+# src/technical_trader_solution/coded_agents/config.py for why.
+#
+# Edit model or system_prompt below to change a coded agent's behavior without touching
+# code. This file is optional: every coded agent falls back to its own hardcoded default
+# when this file or its section is absent.
+
+schema_version: 1
+coded_agents:
+  narrative-clusters-agent:
+    llm_endpoint:
+      provider: claude
+      base_url: https://api.anthropic.com
+      api_key_env: ANTHROPIC_API_KEY
+    model: claude-haiku-4-5-20251001
+    max_tokens: 32
+    system_prompt: |
+      You label a cluster of stock tickers that share a narrative or topic, drawn from
+      earnings reports, SEC filings, and news coverage. Given the cluster's top keyphrases
+      and a few representative excerpts, respond with exactly one short topic label -- a
+      few words naming the shared storyline, no punctuation-wrapped quotes, no JSON, no
+      explanation. Never claim a specific price direction; the label names the narrative
+      only, not a market call.
