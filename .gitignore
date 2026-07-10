@@ -1,0 +1,9 @@
+# agent-dev-agent install
+.mcp.json
+.clinerules
+.github
+.claude
+.vscode
+
+# agent-dev-agent runtime
+agent_building_agent.log
