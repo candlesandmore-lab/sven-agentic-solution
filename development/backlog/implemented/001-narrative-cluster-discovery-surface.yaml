@@ -2,7 +2,7 @@ schema_version: 1
 story:
   id: 1
   title: Narrative-Cluster Discovery Surface
-  state: active
+  state: implemented
   created_on: 2026-07-08
   last_updated_on: 2026-07-09
   source_todo:
@@ -179,6 +179,64 @@ story:
         2026-07-09) after resolving an agent-building-agent runtime defect encountered along
         the way -- see review_findings below for the full account. task_5_qa_validation has
         not been started.
+      - task_5_qa_validation, owner qa-agent via the qa skill -- filled real test gaps before
+        invoking qa-agent (which only executes pytest/yaml-check and narrates results, per
+        its own runtime source; it does not author tests or demos itself) -- added
+        tests/unit/test_extract.py and tests/unit/test_trend.py (extract.py and trend.py
+        previously had no dedicated fixture-driven unit coverage, only indirect exercise via
+        the live end-to-end test), tests/prompts/test_label_prompt.py (validate_label
+        unit checks; a deterministic test that NarrativeClustersAgent.evaluate() rejects an
+        invalid label and accepts a valid one, confirming the refinement-trigger contract;
+        and a live_endpoint test of generate_topic_label's single-string-output contract
+        against the real Anthropic API), and tests/unit/test_fetch_fmp_client.py (live
+        FMPClient interface test, reusing documents.yaml's tickers, skips without
+        FMP_API_KEY). Added demos/narrative_clusters_demo.py and ran it for real -- two
+        multi-ticker clusters from the two-topic fixture via a genuine Anthropic label call
+        ("AI datacenter power surge" for CEG/NVDA/VST; "Quantum Computing Breakthroughs"
+        for IONQ/QBTS/RGTI, both frequency_of_mention=6/company_breadth=3), then launched `tts
+        dashboard serve` against the demo store and drove it with a browser-driven
+        Playwright script confirming both clusters render with a working "Inspect charts"
+        chart-inspection link and no theme-creation control. Ran the full suite directly
+        (`uv run pytest tests`) -- 28 passed, 1 skipped (the FMP-client test, FMP_API_KEY not
+        configured in this environment) -- also confirmed no bare print() calls exist in
+        the generated src/ tree, per the QA logging-compliance check.
+        coded_agent_invoke(qa-agent) (task qa-us-015-task5-v1) then ran for real -- yaml-check
+        on the story and task-plan files passed; its own internal run_pytest("tests") call
+        reported fail, traced to the same class of environment defect as task_4's max_tokens
+        bug -- agent-building-agent's own local .venv at this project's root (where its
+        console-script shim's shebang points) is a separate, stale, partial environment
+        that was never synced with this project's pytest/pyyaml dev-dependency group
+        (only the parent uv workspace's shared venv has them, which `uv run pytest`
+        correctly resolves to); confirmed by reproducing the identical
+        "No module named pytest" error by invoking that exact interpreter directly.
+        Per the human trader's direction (asked, since this is agent-building-agent's own
+        environment, not story 001's), left that environment unmodified rather than
+        patching it; qa-agent's raw pass_fail_result.pytest="fail" is recorded below as a
+        known false negative, superseded by the directly-verified 28-passed/1-skipped
+        result above. qa-agent set developer_approval_required=true for the prompt-flow
+        and demo-flow evidence, per the QA approval-boundaries sub-skill; that developer
+        approval is requested from the human trader separately, not self-granted.
+        Developer approval granted 2026-07-09 for both the prompt-flow evidence (live
+        label-node output, refinement-trigger behavior) and the demo-flow evidence
+        (two-cluster demo run, dashboard rendering with a working chart-inspection link).
+        One non-blocking cosmetic note accepted as a deferred item -- with only one trend
+        snapshot per cluster so far, Plotly's auto-ranged x-axis renders sub-second tick
+        labels instead of just the date; expected to read normally once multiple nightly
+        runs accumulate real dates to span, not a data-correctness defect.
+      - task_6_final_review, owner review-validation-agent via coded_agent_invoke -- final
+        review gate across code, tests, demo, and documentation alignment (task
+        review-us-015-task6-final-v1, 2026-07-09). Before invoking it, checked
+        docs/architecture/01-technical-trader-solution.md and docs/implementation/
+        01-narrative-cluster-discovery-surface.md against the shipped code directly --
+        no drift found; both documents' status markers already read "generated" and
+        match what is actually shipped, and docs/README.md's document-lookup index
+        already references both. Passed clean (gate_result.state=pass, 7 findings, all
+        informational) -- all five story success criteria confirmed demonstrably met by
+        shipped code and test/demo evidence; SDK/CLI/MCP mandatory-generation rule
+        confirmed satisfied; the two infrastructure caveats from task_4 (max_tokens fix)
+        and task_5 (qa-agent's stale-.venv false negative) confirmed correctly classified
+        as non-story defects, not blocking findings. No new blocking, important, or minor
+        findings raised. Story moved from active to implemented below.
     review_findings:
       - severity: blocking
         finding: Tech-restricted term 'agentic'/'agent' appeared in functional success_criteria
@@ -303,5 +361,27 @@ story:
           v4 resubmitted with the correct input shape, embedding the actual story
           success_criteria/guidelines and the three new source files' full contents rather
           than a prose summary, and passed.
-    deferred_items: []
+      - severity: info
+        finding: Task_6 final review gate (code, tests, demo, and documentation alignment)
+          before the story moves from active to implemented
+        resolution: >
+          Passed clean (task review-us-015-task6-final-v1, 2026-07-09): all five story
+          success criteria confirmed demonstrably met by shipped code and test/demo
+          evidence; SDK/CLI/MCP mandatory-generation rule confirmed satisfied (all three
+          surfaces generated, reusing the same core functions, backed by dedicated
+          tests); code/tests/demo/documentation alignment confirmed with no drift after
+          an explicit direct check of docs/architecture/01-technical-trader-solution.md
+          and docs/implementation/01-narrative-cluster-discovery-surface.md against the
+          shipped code; the task_4 max_tokens fix and task_5 qa-agent stale-.venv false
+          negative both confirmed correctly classified as non-story infrastructure
+          caveats, not blocking findings. Seven findings, all informational; no
+          blocking, important, or minor issues. Story satisfies all task-plan
+          completion_conditions and moves to implemented.
+    deferred_items:
+      - item: Discovery Surface trend sparkline's x-axis renders sub-second tick labels
+          (for example "23:59:59.999") when a cluster has only one trend snapshot, since
+          Plotly auto-ranges the axis around a single timestamp.
+        reason: Cosmetic only, not a data-correctness defect; accepted as-is during task_5
+          developer approval on 2026-07-09. Expected to read as normal dates once multiple
+          nightly runs accumulate more than one snapshot per cluster to span.
   open_questions: []
