@@ -11,3 +11,5 @@ qa-agent.log
 instructed-agent-creation-agent.log
 review-validation-agent.log
 story-telling-agent.log
+
+.env
