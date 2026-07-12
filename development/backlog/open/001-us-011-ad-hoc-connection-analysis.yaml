@@ -1,0 +1,210 @@
+schema_version: 1
+story:
+  id: 1
+  title: >-
+    Enable Ad-Hoc Shared Theme Connection Analysis for a Ticker List Supplied
+    by the Human Trader
+  state: open
+  created_on: "2026-07-12"
+  last_updated_on: "2026-07-12"
+  source_todo:
+    - development/todos/001-start-us-011.md
+  actor: human trader
+  goal: >-
+    Enable the human trader to submit a ticker list on demand and receive
+    shared theme connection analysis for it within the Technical Trader
+    Solution, independently of nightly candidate net detection and current
+    bonding state.
+  success_criteria:
+    - The human trader can upload a single-column CSV file with a header
+      row containing a ticker list of 2 to 50 entries through the Technical
+      Trader Solution interface.
+    - After uploading a valid file, the human trader receives the result of
+      shared theme connection analysis directly within the Technical
+      Trader Solution interface.
+    - >-
+      The result contains: (a) candidate_connections, each with a
+      connection_description and member_tickers, and (b)
+      additional_plausible_members, each with ticker and rationale as
+      defined in the canonical corpus.
+    - All ad-hoc analysis requests and their results are audit-logged in a
+      queryable store indexed by request id and submitted ticker, distinct
+      from future nightly candidate net detection audit records.
+    - No nightly candidate net detection capability is required or assumed
+      for this feature; ad-hoc analysis is fully decoupled from that
+      future batch process.
+  architecture_options:
+    - option: >-
+        Implement the ad-hoc connection analysis as a functional module
+        integrated directly into the Technical Trader Solution's backend,
+        triggered by file upload.
+      pros:
+        - Immediate feedback for the human trader; full control over
+          process integration.
+      cons:
+        - Initial analytic/statistical detection logic will need careful
+          isolation for future extensibility.
+    - option: >-
+        Use a microservice approach, where the file upload triggers a
+        RESTful API request to a dedicated service for connection
+        analysis.
+      pros:
+        - Clean separation of analytic logic; easier parallel
+          development/maintenance.
+      cons:
+        - Added overhead in service communication and potential interface
+          complexity.
+  implementation_options:
+    - option: >-
+        Leverage existing file upload patterns in the Technical Trader
+        Solution for CSV ingestion and validation.
+      pros:
+        - Reduces implementation effort; aligns with user expectations.
+      cons:
+        - May require additional security/auditing work for file
+          submissions.
+    - option: >-
+        Emit persistent audit log entries via a dedicated audit service or
+        database table for each request/result.
+      pros:
+        - Ensures traceability and fulfills compliance requirements.
+      cons:
+        - Storage schema details and engine selection will be specified in
+          the implementation-spec phase, not this story.
+  repository_context:
+    branch: review-20260710
+    base_commit: 30c74dbf7bc1724a2cb9de56e8d270b3f9e63086
+  current_implementation:
+    status: >-
+      no implementation exists yet; this story's ad-hoc entry point is the
+      first piece of shared theme connection analysis functionality being
+      built.
+    canonical_definitions:
+      Technical Trader Solution: >-
+        the complete delivered artifact being built by this repository's
+        development effort -- the union of interface, data integrations,
+        deterministic components, and any internal AI-based components --
+        i.e. the product this story is adding a capability to. It is not a
+        separate pre-existing external system; it is the solution under
+        development in this repository.
+      Human trader: >-
+        the single human domain expert whose knowledge and requirements
+        drive this solution. Canonical actor term; never bare 'trader'.
+      Theme: >-
+        a trader-approved collection of tickers sharing a confirmed
+        connection, requiring both observed behavioral sync and a
+        confirmed connection.
+      Candidate net: >-
+        the largest connected component of tickers whose pairwise
+        similarity scores newly crossed the detection threshold in a
+        nightly batch run; an automated surface, never a theme itself.
+      Connection: >-
+        the explanatory link, grounded in concrete company-level facts,
+        justifying why institutional money would buy or sell a set of
+        tickers together; confirmed (trader-accepted) or hypothesized
+        (under investigation).
+      Shared theme connection analysis: >-
+        the analysis capability (first specified by user story US-003 in
+        the source corpus) that, given a set of tickers, produces
+        candidate_connections (hypothesized or confirmed connections, each
+        covering a subset of the tickers) and additional_plausible_members
+        (tickers outside the submitted/bonded set that are consistent
+        with a proposed connection but have not yet shown the bonding
+        signal, per the corpus definition, worth monitoring). The precise
+        analytic/statistical criteria used to detect a connection (e.g.
+        exact thresholds, scoring formulas) are NOT defined by this story
+        and are explicitly out of scope for the story-drafting phase --
+        such analytic-detection-criteria decisions belong to the
+        architecture-update phase that follows backlog insertion of this
+        story, not to the story itself.
+      nightly candidate net detection: >-
+        a planned, not-yet-implemented, future batch process this story's
+        ad-hoc entry point is explicitly decoupled from. This term names
+        something outside the scope of this story; the story states
+        plainly that this is a distinct, not-yet-built future capability
+        referenced only to describe what this story does NOT depend on.
+      additional_plausible_members: >-
+        a ticker not already covered by member_tickers that is consistent
+        with a candidate_connections entry's rationale but has not yet
+        shown the bonding signal -- included so the human trader can
+        assess it alongside already-bonded tickers.
+    output_shape:
+      candidate_connections:
+        - connection_description: str
+          member_tickers:
+            - str
+      additional_plausible_members:
+        - ticker: str
+          rationale: str
+      additional_plausible_members_definition: >-
+        a ticker not already covered by member_tickers that is consistent
+        with a candidate_connections entry's rationale but has not yet
+        shown the bonding signal -- included so the human trader can
+        assess it alongside already-bonded tickers.
+  guidelines:
+    - Use 'human trader' and 'Technical Trader Solution' strictly as
+      described in canonical definitions with no variants or synonyms.
+    - Analytic/statistical criteria for connection detection are
+      explicitly out of scope for this story and must not be specified;
+      these decisions are deferred to the post-story architecture-update
+      phase.
+    - >-
+      Ensure upload validation: only single-column CSV files with a header
+      row and ticker counts between 2 and 50 (bounds adjustable in
+      configuration) are accepted.
+    - Results and audit logs must be generated for every request
+      regardless of whether any connections are found.
+    - nightly candidate net detection is referenced only to clarify its
+      independence from this ad-hoc feature; no code, data, or audit
+      handling for it is required in this story.
+  impact_analysis:
+    methodology: >-
+      This story initiates shared theme connection analysis with an ad-hoc
+      entry point for ticker lists supplied by the human trader, as the
+      first capability in this analytic area, and explicitly does not
+      address the analytic detection criteria, which are to be handled in
+      the architecture-update phase per the mandated repository flow.
+    architecture: >-
+      The architecture must support user-driven file-initiated analysis,
+      persistent audit logging by request id/submitted ticker, and result
+      display -- all within the Technical Trader Solution interface.
+      Dependencies on nightly candidate net detection or its data/audit
+      models are strictly excluded.
+    implementation: >-
+      This is the initial implementation of shared theme connection
+      analysis and must establish infrastructure for file ingestion, user
+      feedback/results, and audit logging; subsequent analytic/statistical
+      code and datastore choices are left for future implementation-spec
+      and architecture-update phases.
+  development_cycle:
+    steps:
+      - Design and document the solution architecture and implementation
+        plan for the ad-hoc connection analysis entry point within the
+        Technical Trader Solution.
+      - Implement file upload handling and validation for ticker CSV
+        (single-column, header row) in the interface.
+      - Integrate the invocation of the initial shared theme connection
+        analysis logic and display of results within the interface.
+      - Persistently audit log all requests and results to a queryable
+        store, independent of future nightly candidate net detection.
+      - Verify feature works according to canonical definitions,
+        corpus-resolved eligibility, and output specs using sample ticker
+        lists and manual/exploratory testing.
+    review_findings: []
+    deferred_items:
+      - item: >-
+          Define and implement analytic/statistical detection criteria and
+          thresholds for shared theme connection analysis.
+        reason: >-
+          Explicitly out of scope for this story per canonical definitions
+          and methodology; to be addressed during post-story
+          architecture-update and implementation-spec phases.
+      - item: >-
+          Build or integrate the nightly candidate net detection batch
+          process or its supporting data/audit schema.
+        reason: >-
+          This ad-hoc entry point is fully decoupled from nightly
+          candidate net detection, which is a planned, not-yet-built,
+          future capability described solely to clarify what is not
+          included in this story.
+  open_questions: []
