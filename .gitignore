@@ -3,6 +3,7 @@
 .claude/**
 agent-dev-agent/**
 .vscode/**
+.clinerules/**
 
 # runtime
 .agent_building_agent/**
