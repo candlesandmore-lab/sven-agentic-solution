@@ -18,3 +18,5 @@ dist/
 .coded_agent_state/
 data/
 *.log
+
+.env
