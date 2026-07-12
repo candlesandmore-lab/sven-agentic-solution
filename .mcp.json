@@ -5,6 +5,13 @@
       "args": [
         "mcp-serve"
       ]
+    },
+    "technical-trader-solution": {
+      "command": "tts",
+      "args": [
+        "mcp",
+        "serve"
+      ]
     }
   }
 }

@@ -23,6 +23,11 @@ from technical_trader_solution.coded_agents.base import (
     CodedAgentState,
     EvaluationResult,
 )
+from technical_trader_solution.coded_agents.config import (
+    DEFAULT_CONFIG_PATH,
+    get_agent_section,
+    load_runtime_config,
+)
 from technical_trader_solution.coded_agents.narrative_clusters_agent.cluster import (
     build_clusters,
 )
@@ -37,7 +42,10 @@ from technical_trader_solution.coded_agents.narrative_clusters_agent.label impor
     generate_topic_label,
     validate_label,
 )
-from technical_trader_solution.coded_agents.narrative_clusters_agent.models import RawDocument
+from technical_trader_solution.coded_agents.narrative_clusters_agent.models import (
+    ClusterView,
+    RawDocument,
+)
 from technical_trader_solution.coded_agents.narrative_clusters_agent.storage import (
     DEFAULT_DB_PATH,
     NarrativeClustersStore,
@@ -60,11 +68,18 @@ class NarrativeClustersAgent(ClaudeCodeSDKAgentBase):
         *,
         db_path: Path | str = DEFAULT_DB_PATH,
         anthropic_client: anthropic.Anthropic | None = None,
+        config_path: Path | str = DEFAULT_CONFIG_PATH,
         **base_kwargs: Any,
     ) -> None:
+        # Co-locate task-id state with the data store by default (rather than the base
+        # class's global `.coded_agent_state/<slug>.sqlite` default) so two agents
+        # pointed at different db_path values -- for example separate test runs, or a
+        # future second environment -- never share or collide on persisted task state.
+        base_kwargs.setdefault("state_db_path", Path(db_path).parent / f"{self.agent_slug}-state.sqlite")
         super().__init__(**base_kwargs)
         self.store = NarrativeClustersStore(db_path)
         self.anthropic_client = anthropic_client
+        self._agent_config = get_agent_section(load_runtime_config(config_path), self.agent_slug)
 
     def run_generate(self, state: CodedAgentState) -> dict[str, Any]:
         inputs = state.inputs
@@ -100,8 +115,13 @@ class NarrativeClustersAgent(ClaudeCodeSDKAgentBase):
                 excerpts.extend(excerpts_by_ticker.get(ticker, []))
                 if len(excerpts) >= MAX_EXCERPTS_PER_CLUSTER:
                     break
+            label_kwargs: dict[str, Any] = {"client": self.anthropic_client}
+            if self._agent_config is not None:
+                label_kwargs["model"] = self._agent_config.model
+                label_kwargs["system_prompt"] = self._agent_config.system_prompt
+                label_kwargs["max_tokens"] = self._agent_config.max_tokens
             label = generate_topic_label(
-                top_keyphrases, excerpts[:MAX_EXCERPTS_PER_CLUSTER], client=self.anthropic_client
+                top_keyphrases, excerpts[:MAX_EXCERPTS_PER_CLUSTER], **label_kwargs
             )
             labeled_clusters.append(cluster.model_copy(update={"topic_label": label}))
 
@@ -113,7 +133,14 @@ class NarrativeClustersAgent(ClaudeCodeSDKAgentBase):
             "run_date": run_date.isoformat(),
             "documents_fetched": len(all_documents),
             "findings_count": len(findings),
-            "clusters": [cluster.model_dump(mode="json") for cluster in labeled_clusters],
+            # Trader-/consumer-facing view, per the task_2 review checkpoint's deferred
+            # finding: never return topic_embedding (an internal matching-algorithm
+            # detail) from a coded-agent run. The full ClusterRecord (with embedding) is
+            # still persisted above for the next run's identity matching.
+            "clusters": [
+                ClusterView.from_record(cluster).model_dump(mode="json")
+                for cluster in labeled_clusters
+            ],
         }
 
     def evaluate(self, state: CodedAgentState, output: dict[str, Any]) -> EvaluationResult:
