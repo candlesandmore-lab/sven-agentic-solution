@@ -48,7 +48,8 @@ story:
   repository_context:
     branch: sven_input
     base_commit: 5df55a1b5e8f65fa4a2a9ddba624c7a6a75130a4
-  current_implementation: {}
+  current_implementation:
+    architecture_document: docs/architecture/01-technical-trader-solution.md
   guidelines:
     - Retain existing technical_trader_solution logic - do not alter behavior,
       only add observability and error handling.
@@ -86,6 +87,19 @@ story:
       - Integrate field masking/redaction for sensitive data into logging
         functions.
       - Test unified error messages and log outputs on all four surfaces.
+      - >-
+        Architecture update (owner architect-planning-agent via the planning skill)
+        -- added a Logging and Error Handling cross-cutting section to
+        docs/architecture/01-technical-trader-solution.md (v0.3), covering the
+        shared log file location and --log-dir override across CLI/SDK/MCP/
+        dashboard, layered exception handling per surface (core raises and logs,
+        SDK passes through, CLI logs+stderr+non-zero exit, MCP reports in tool
+        response, dashboard shows in-page error), unified CLI/MCP error-message
+        formatting, and deferred masked-fields specification. change_type is
+        update; affected_documents is docs/architecture/01-technical-trader-solution.md;
+        downstream_impacts are the implementation-spec update for CLI/SDK/MCP/
+        dashboard error and logging contracts, and code changes across
+        core/cli/sdk/mcp/dashboard.
     review_findings:
       - severity: blocking
         finding: Ambiguous term - 'technical_trader_solution' vs. 'technical trader
@@ -131,6 +145,34 @@ story:
         resolution: Branch was clean at transition time (task review-story-002-draft-v2
           committed prior); moved development/backlog/open/002-enhance-error-and-logging.yaml
           to development/backlog/active/002-enhance-error-and-logging.yaml, 2026-07-14.
+      - severity: blocking
+        finding: Architecture v0.3 masked-fields deferral lacked an explicit safety
+          rationale, and dashboard's --log-dir exposure contradicted the CLI/SDK/MCP
+          entrance-API definition (task review-story-002-architecture-v1, 2026-07-14).
+        resolution: >
+          Architecture v0.4 added explicit deferral rationale for the masked-fields
+          decision and classified the dashboard as a UI layer over the SDK (not a
+          fourth entrance API), inheriting --log-dir/--log-level through its SDK
+          dependency and additionally exposing both on its own launch command.
+      - severity: important
+        finding: Architecture v0.3 left log-file naming, --log-level, and the unified
+          message-format deferral unspecified (task review-story-002-architecture-v1,
+          2026-07-14).
+        resolution: >
+          Architecture v0.4 adopted technical_trader_solution_<datetime>.log naming,
+          added --log-level [info, debug, warning, error] (default info) alongside
+          --log-dir, and made the message-template deferral to implementation-spec
+          explicit with rationale.
+      - severity: info
+        finding: Architecture review gate re-run after the above resolutions.
+        resolution: >
+          Passed clean (task review-story-002-architecture-v2, 2026-07-14): both
+          blocking findings and all three important findings confirmed resolved;
+          alignment with agent-dev-agent's own Logging And Error Handling Rules
+          confirmed. One minor, deferrable finding (confirm 'domain exceptions' is
+          the canonical term across the document set) checked directly -- no
+          competing term exists elsewhere in docs/ or the story file; first use is
+          canonical. docs/architecture/01-technical-trader-solution.md now at v0.4.
     deferred_items:
       - item: Finalize and document the list of masked fields (API keys,
           credentials, PII) for log redaction, including the exact masking
