@@ -225,4 +225,25 @@ story:
         reason: All four marked defer_allowed=true (info/minor); do not change
           the implementation contract, only documentation clarity (task
           review-story-002-implspec-v3, 2026-07-14).
+    solution_surface_classification: >
+      Recorded in docs/architecture/01-technical-trader-solution.md v0.5's
+      Solution-Surface Classification table: instructed_agent_only, owned by
+      python-creation-agent. Fails the coded-agent two-part test on both counts
+      (no fixed-node/graph flow, no frontier-reasoning requirement); the work is
+      direct instrumentation of existing modules against a fully-specified
+      implementation contract.
+    task_plan: >
+      development/backlog/active/002-enhance-error-and-logging-task-plan.yaml --
+      7 ordered tasks (core logging/errors module, then CLI/SDK/MCP/dashboard
+      wiring in parallel, then QA validation, then final review), solution_surface
+      instructed_agent_only. Task-plan review gate passed clean (task
+      review-story-002-taskplan-v2, 2026-07-14) after resolving five blocking
+      findings from the first pass (task review-story-002-taskplan-v1): explicit
+      MCP execution-surface compliance statements, explicit TTS_RUN_TIMESTAMP
+      nested-process coordination allocation, explicit third-party logger
+      (httpx/httpcore) redirection allocation via root-logger handler mirroring,
+      an invocation_surfaces rationale clarification (schema requires rationale
+      only for 'omitted' status, not 'generated'), and confirmation that this
+      review pass served as the combined abstraction-alignment check for
+      architecture v0.5, implementation-spec v0.3, and the task plan together.
   open_questions: []

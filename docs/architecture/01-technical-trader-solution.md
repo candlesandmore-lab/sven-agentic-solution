@@ -117,6 +117,7 @@ consistency across any coded components this workspace produces.
 | Story | Capability | `top_level_runtime` | `subagent_topology` | Rationale |
 | --- | --- | --- | --- | --- |
 | 001 (US-015) | Narrative Extraction and Clustering Pipeline | instructed | `coded_agent` | Fixed-node pipeline (fetch, extract, cluster, label, persist); no open-ended planning or tool choice required; confirmed with the human trader on 2026-07-08 given STR-011's mandatory chart-confirmation step bounds the cost of a coarser mechanical clustering. |
+| 002 | Cross-cutting logging and error handling (core, CLI, SDK, MCP, dashboard) | instructed | `instructed_agent_only` | Fails the coded-agent two-part test on both counts: there is no fixed-node/graph flow to run (no generate/evaluate/refine loop, no repeated LLM-judged output) and no frontier-reasoning or planning requirement -- the work is direct instrumentation of existing modules (a logging module extension, an exception hierarchy, CLI/SDK/MCP/dashboard wiring) against a fully-specified implementation contract (`docs/implementation/02-logging-and-error-handling.md`). Owned by `python-creation-agent`. |
 
 `top_level_runtime` for the Technical Trader Solution is recorded here as `instructed` per the
 top-level guardrail, represented by a lightweight orchestrator role introduced as future
@@ -215,3 +216,6 @@ component and user surface (core, coded agents, CLI, SDK, MCP, and the dashboard
   `--log-level [info, debug, warning, error]` option (default `info`) alongside `--log-dir`;
   defined "domain exceptions"; made the masked-fields and message-template deferrals explicit
   with rationale.
+- v0.5 (2026-07-14) -- added story 002's Solution-Surface Classification row:
+  `instructed_agent_only`, owned by `python-creation-agent`, since the work fails the
+  coded-agent two-part test (no fixed-node/graph flow, no frontier-reasoning requirement).

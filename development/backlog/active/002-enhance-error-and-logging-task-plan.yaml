@@ -1,0 +1,193 @@
+story_task_plan:
+  story_id: 2
+  source_implementation_spec: docs/implementation/02-logging-and-error-handling.md
+  source_architecture: docs/architecture/01-technical-trader-solution.md
+  agent_identifier_note: >
+    owner/agent values below use the canonical delegation-map slugs defined in
+    .claude/rules/agent-dev-agent.md (python-creation-agent, qa-agent,
+    review-validation-agent).
+  ordered_tasks:
+    - id: task_1_logging_and_errors_core
+      owner: python-creation-agent
+      description: >
+        Extend technical_trader_solution/logging.py per the implementation spec's
+        Logging Contract and Sensitive-Data Masking sections. Run-timestamp
+        coordination: configure_logger resolves TTS_RUN_TIMESTAMP via an
+        inherited-environment-variable-first check -- read os.environ, reuse the
+        value if a parent process (or an earlier call in this process) already
+        set it, otherwise generate datetime.now().strftime("%Y%m%dT%H%M%S") and
+        write it back to os.environ["TTS_RUN_TIMESTAMP"] -- so every process in
+        the same process tree resolves to the same log filename. Implement
+        configure_logger(name, *, log_dir=None, log_level="INFO") replacing
+        log_file, log_dir creation for default and caller-supplied paths,
+        log_level validation (exactly info/debug/warning/error), MASKED_ENV_VARS
+        = (FMP_API_KEY, ANTHROPIC_API_KEY), mask_sensitive(text), and
+        MaskingFilter attached to the stderr/file handlers and mirrored onto the
+        root logger's handlers on first use -- this root-logger mirroring is
+        also what redirects third-party libraries that log through Python's
+        logging module without their own handler (for example the httpx/httpcore
+        client the anthropic SDK uses internally for the narrative-clusters
+        coded agent, per the Uniform SDK Base-Class Decision) into the same
+        masked, shared log file, since such libraries propagate to root by
+        default. Add the new technical_trader_solution/errors.py module with
+        TechnicalTraderSolutionError, DataProviderError, InvalidClusterError, and
+        ConfigurationError per the Domain Exception Hierarchy section. All
+        Python file edits validated via the mandatory MCP execution surface
+        (python-command), not ad hoc terminal commands.
+      prerequisite_artifacts: []
+    - id: task_2_cli_wiring
+      owner: python-creation-agent
+      description: >
+        Add --log-dir/--log-level options to the tts root click.group in
+        cli/main.py, calling configure_logger exactly once per invocation at
+        startup, before constructing any third-party client, so this process's
+        TTS_RUN_TIMESTAMP is resolved (inherited or newly generated) before any
+        subcommand runs. Catch TechnicalTraderSolutionError subclasses in
+        narrative CLI commands (cli/narrative_clusters.py), replacing the
+        existing bare `raise SystemExit(1)`, logging the exception and printing
+        the Unified Error Message Format string to stderr before exiting 1.
+      prerequisite_artifacts:
+        - task_1_logging_and_errors_core
+    - id: task_3_sdk_wiring
+      owner: python-creation-agent
+      description: >
+        Add technical_trader_solution.sdk.configure_logging(log_dir=None,
+        log_level="info") as a thin wrapper over configure_logger, per the
+        Logging Contract's SDK section. Audit sdk/narrative_clusters.py and the
+        core/coded-agent layers it calls into (core/market_data.py,
+        coded_agents/narrative_clusters_agent/fetch.py) so FMP-unreachable and
+        invalid-cluster-id failures raise DataProviderError/InvalidClusterError
+        instead of propagating raw provider or KeyError/IndexError exceptions,
+        confirming SDK functions never catch TechnicalTraderSolutionError
+        themselves.
+      prerequisite_artifacts:
+        - task_1_logging_and_errors_core
+    - id: task_4_mcp_wiring
+      owner: python-creation-agent
+      description: >
+        Add --log-dir/--log-level to `tts mcp serve` / mcp/server.py's
+        entry-point function, calling configure_logger before constructing the
+        FastMCP server object, per the Sensitive-Data Masking section's
+        initialization-order contract. Wrap each MCP tool function in
+        mcp/narrative_clusters.py to catch TechnicalTraderSolutionError and
+        return the Unified Error Message Format string in the tool's error
+        response instead of letting an unhandled exception reach the protocol
+        layer.
+      prerequisite_artifacts:
+        - task_1_logging_and_errors_core
+    - id: task_5_dashboard_wiring
+      owner: python-creation-agent
+      description: >
+        Update `tts dashboard serve` (cli/dashboard.py) to forward
+        --log-dir/--log-level (renamed from --log-file) to the `streamlit run`
+        subprocess and to pass the parent process's resolved TTS_RUN_TIMESTAMP
+        through the subprocess environment. Wrap each SDK call in
+        dashboard/discovery_surface.py to catch TechnicalTraderSolutionError and
+        render the Unified Error Message Format string in an st.error(...)
+        banner instead of raising into the Streamlit process.
+      prerequisite_artifacts:
+        - task_1_logging_and_errors_core
+    - id: task_6_qa_validation
+      owner: qa-agent
+      description: >
+        Unit tests for mask_sensitive, MaskingFilter (handler and root-logger
+        masking, including a third-party-style logger with no handler of its
+        own propagating into the masked shared log file), configure_logger's
+        TTS_RUN_TIMESTAMP-based filename and log_dir/log_level behavior
+        (including the inherited-environment-variable-first reuse case for a
+        nested-process scenario), and the errors.py hierarchy. CLI interface
+        tests confirming each domain-exception subclass exits non-zero and
+        prints the Unified Error Message Format to stderr without a stack
+        trace. SDK interface test confirming TechnicalTraderSolutionError
+        subclasses propagate unchanged. MCP interface test confirming a domain
+        exception returns the unified message in the tool's error response.
+        Manual/demo check driving the dashboard with a forced failure (invalid
+        cluster_id or FMP_API_KEY unset) confirming the st.error(...) banner
+        renders the unified message, per the Validation Expectations section.
+        Test execution and any YAML validation performed via the mandatory MCP
+        execution surface (pytest-command, validate_yaml), not ad hoc terminal
+        commands.
+      prerequisite_artifacts:
+        - task_2_cli_wiring
+        - task_3_sdk_wiring
+        - task_4_mcp_wiring
+        - task_5_dashboard_wiring
+    - id: task_7_final_review
+      owner: review-validation-agent
+      description: >
+        Final review gate across code, tests, demo, and documentation alignment
+        before final alignment validation and story completion.
+      prerequisite_artifacts:
+        - task_6_qa_validation
+  parallelizable_tasks:
+    - note: >
+        task_2_cli_wiring, task_3_sdk_wiring, task_4_mcp_wiring, and
+        task_5_dashboard_wiring each touch a distinct surface's own files (CLI,
+        SDK, MCP, dashboard respectively) and share no file-level overlap once
+        task_1_logging_and_errors_core's shared logging.py/errors.py modules
+        exist; they may run in parallel after task_1 completes.
+  review_checkpoints:
+    - after: task_1_logging_and_errors_core
+      note: Review the extended logging.py (TTS_RUN_TIMESTAMP coordination,
+        MaskingFilter/handler attachment) and the new errors.py hierarchy
+        against the implementation spec before any surface wiring starts,
+        since all four wiring tasks depend on this contract being correct.
+    - after: task_5_dashboard_wiring
+      note: Review all four surfaces' wiring together for the Unified Error
+        Message Format's consistency (identical text across CLI/MCP/dashboard
+        for the same failure) before QA.
+    - after: task_6_qa_validation
+      note: Final review gate before final alignment validation.
+  completion_conditions:
+    - All five story success criteria are demonstrably met across core, CLI,
+      SDK, MCP, and dashboard.
+    - Unit and interface tests pass; developer approval recorded for the
+      manual/demo dashboard check per the QA agent's approval-boundaries
+      sub-skill.
+    - docs/architecture/01-technical-trader-solution.md,
+      docs/implementation/02-logging-and-error-handling.md, and the story YAML
+      are aligned with the shipped code; any drift is corrected in the same
+      story.
+    - No change to the narrative extraction, clustering, labeling, or
+      trend-computation algorithms' computed outputs; only logging and error
+      handling are added.
+    - Working tree is clean (or the human trader has explicitly approved
+      committing) before the story moves to implemented.
+    - Python and pytest execution, and YAML syntax validation, performed via the
+      mandatory MCP execution surface throughout tasks 1-7, per the workspace's
+      core execution-surface guardrail; no ad hoc terminal commands for these
+      categories.
+  solution_surface: instructed_agent_only
+  top_level_runtime: instructed
+  subagent_topology: []
+  phase_owners:
+    - phase: task_1_logging_and_errors_core
+      agent: python-creation-agent
+    - phase: task_2_cli_wiring
+      agent: python-creation-agent
+    - phase: task_3_sdk_wiring
+      agent: python-creation-agent
+    - phase: task_4_mcp_wiring
+      agent: python-creation-agent
+    - phase: task_5_dashboard_wiring
+      agent: python-creation-agent
+    - phase: task_6_qa_validation
+      agent: qa-agent
+    - phase: task_7_final_review
+      agent: review-validation-agent
+  # rationale is null for all three surfaces because status is "generated", not "omitted";
+  # the schema (docs/schemas/implementation-task-plan.template.yaml) only requires a rationale
+  # string when a surface's status is "omitted". SDK, CLI, and MCP were already generated in
+  # story 001 and are extended in place by task_2/task_3/task_4 (dashboard is not an entrance
+  # API per docs/architecture/01-technical-trader-solution.md v0.4) -- no surface is newly
+  # introduced or omitted by story 002.
+  invocation_surfaces:
+    sdk:
+      status: generated
+      rationale: null
+    cli:
+      status: generated
+      rationale: null
+    mcp:
+      status: generated
+      rationale: null
