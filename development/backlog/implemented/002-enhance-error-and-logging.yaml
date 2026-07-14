@@ -3,7 +3,7 @@ story:
   id: 2
   title: Enhance technical_trader_solution with robust error handling and logging
     across all user surfaces
-  state: active
+  state: implemented
   created_on: 2026-07-14
   last_updated_on: 2026-07-14
   source_todo:
@@ -101,6 +101,58 @@ story:
         downstream_impacts are the implementation-spec update for CLI/SDK/MCP/
         dashboard error and logging contracts, and code changes across
         core/cli/sdk/mcp/dashboard.
+      - >-
+        task_1_logging_and_errors_core through task_5_dashboard_wiring (owner
+        python-creation-agent, solution_surface instructed_agent_only) --
+        extended technical_trader_solution/logging.py (TTS_RUN_TIMESTAMP
+        inherited-environment-variable run-timestamp coordination, MASKED_ENV_VARS
+        allowlist, mask_sensitive, MaskingFilter attached to handlers and mirrored
+        onto the root logger plus httpx/httpcore on first use, log_dir creation
+        for default and caller-supplied paths, log_level validation raising
+        ConfigurationError); added technical_trader_solution/errors.py
+        (TechnicalTraderSolutionError, DataProviderError, InvalidClusterError,
+        ConfigurationError, format_error_message implementing the Unified Error
+        Message Format); wired --log-dir/--log-level on the tts root click.group
+        and domain-exception handling on narrative CLI commands; added
+        sdk.configure_logging() and InvalidClusterError for a never-existed
+        cluster_id in get_cluster_trend; moved configure_logger to run before
+        FastMCP construction in mcp/server.py and wrapped each MCP tool to return
+        an error-keyed dict carrying the unified message on a domain exception;
+        renamed --log-file to --log-dir and added TTS_RUN_TIMESTAMP subprocess-env
+        propagation in cli/dashboard.py, wrapping each dashboard SDK call to
+        render the unified message via st.error(...)/st.warning(...). Folded the
+        pre-existing FMPCredentialError classes into ConfigurationError and
+        wrapped httpx.HTTPError at both FMP call sites into DataProviderError,
+        without changing narrative-clusters' computed outputs.
+      - >-
+        task_6_qa_validation (owner qa-agent via coded_agent_invoke, task
+        qa-story-002-v1) -- added tests/unit/test_logging.py (10 tests) and
+        tests/unit/test_errors.py (4 tests), plus one InvalidClusterError
+        interface test each to the SDK, CLI, and MCP test files, none requiring
+        an API key. Full suite -- 46 passed, 1 skipped (FMP_API_KEY not
+        configured) -- via the MCP pytest execution surface; yaml-check on the
+        story and task-plan files passed. Verified end to end beyond tests: ran
+        the real tts CLI against an unknown cluster_id via the MCP Python
+        execution surface, confirming the masked log line, the exact Unified
+        Error Message Format on stderr, and a non-zero exit; confirmed the root
+        logger carries masked handlers and httpx.propagate=False before FastMCP
+        construction completes; confirmed CLI argument-parse-time rejection of
+        an invalid --log-level. developer_approval_required was true for the
+        dashboard's three error-handling call sites (verified by direct code
+        review, not an automated browser demo); the human trader accepted
+        code-inspection evidence for this contained change, approval granted
+        2026-07-14.
+      - >-
+        task_7_final_review (owner review-validation-agent via
+        coded_agent_invoke, task review-story-002-task7-final-v1) -- final
+        review gate across code, tests, demo evidence, and documentation
+        alignment. Passed clean: all five success criteria confirmed
+        demonstrably met; docs/architecture/01-technical-trader-solution.md v0.5
+        and docs/implementation/02-logging-and-error-handling.md v0.3 confirmed
+        to match the shipped code exactly, no drift; the task plan's 7 tasks
+        confirmed complete; working tree confirmed clean. 9 findings, all
+        informational; no blocking, important, or minor issues. Story moved
+        from active to implemented.
     review_findings:
       - severity: blocking
         finding: Ambiguous term - 'technical_trader_solution' vs. 'technical trader
@@ -208,6 +260,40 @@ story:
           applied inline, since they do not change the implementation contract.
           docs/implementation/02-logging-and-error-handling.md now at v0.3;
           docs/README.md's implementation document index updated in the same story.
+      - severity: blocking
+        finding: Task-plan v1 missing explicit invocation_surfaces rationale
+          clarity, MCP execution-surface compliance statements, run-timestamp
+          nested-process coordination allocation, third-party logger redirection
+          allocation, and architecture v0.5 abstraction-alignment confirmation
+          (task review-story-002-taskplan-v1, 2026-07-14).
+        resolution: >
+          Task-plan v2 resolved all five: clarified invocation_surfaces rationale
+          is null because status is generated not omitted; added explicit MCP
+          execution-surface compliance statements to task_1/task_6 and
+          completion_conditions; allocated TTS_RUN_TIMESTAMP coordination and a
+          nested-process reuse test to task_1/task_6; allocated third-party
+          logger (httpx/httpcore) redirection via root-logger handler mirroring
+          to task_1 with a propagation test in task_6; and this review pass
+          itself served as the combined abstraction-alignment check for
+          architecture v0.5, implementation-spec v0.3, and the task plan
+          together (task review-story-002-taskplan-v2, 2026-07-14) -- passed
+          clean.
+      - severity: info
+        finding: Task_7 final review gate (code, tests, demo evidence, and
+          documentation alignment) before the story moves from active to
+          implemented.
+        resolution: >
+          Passed clean (task review-story-002-task7-final-v1, 2026-07-14): all
+          five story success criteria confirmed demonstrably met by shipped
+          code, tests (46 passed, 1 skipped), and manual end-to-end verification;
+          docs/architecture/01-technical-trader-solution.md v0.5 and
+          docs/implementation/02-logging-and-error-handling.md v0.3 confirmed to
+          match the shipped code exactly, no drift; the task plan's 7 tasks
+          confirmed complete; developer approval for the dashboard's
+          code-inspection evidence confirmed satisfied; working tree confirmed
+          clean. 9 findings, all informational; no blocking, important, or minor
+          issues. Story satisfies all task-plan completion_conditions and moves
+          to implemented.
     deferred_items:
       - item: Finalize and document the list of masked fields (API keys,
           credentials, PII) for log redaction, including the exact masking
@@ -224,83 +310,13 @@ story:
           message' to its defining section.
         reason: All four marked defer_allowed=true (info/minor); do not change
           the implementation contract, only documentation clarity (task
-          review-story-002-implspec-v3, 2026-07-14).
-    solution_surface_classification: >
-      Recorded in docs/architecture/01-technical-trader-solution.md v0.5's
-      Solution-Surface Classification table: instructed_agent_only, owned by
-      python-creation-agent. Fails the coded-agent two-part test on both counts
-      (no fixed-node/graph flow, no frontier-reasoning requirement); the work is
-      direct instrumentation of existing modules against a fully-specified
-      implementation contract.
-    task_plan: >
-      development/backlog/active/002-enhance-error-and-logging-task-plan.yaml --
-      7 ordered tasks (core logging/errors module, then CLI/SDK/MCP/dashboard
-      wiring in parallel, then QA validation, then final review), solution_surface
-      instructed_agent_only. Task-plan review gate passed clean (task
-      review-story-002-taskplan-v2, 2026-07-14) after resolving five blocking
-      findings from the first pass (task review-story-002-taskplan-v1): explicit
-      MCP execution-surface compliance statements, explicit TTS_RUN_TIMESTAMP
-      nested-process coordination allocation, explicit third-party logger
-      (httpx/httpcore) redirection allocation via root-logger handler mirroring,
-      an invocation_surfaces rationale clarification (schema requires rationale
-      only for 'omitted' status, not 'generated'), and confirmation that this
-      review pass served as the combined abstraction-alignment check for
-      architecture v0.5, implementation-spec v0.3, and the task plan together.
-    implementation_execution: >
-      task_1_logging_and_errors_core through task_5_dashboard_wiring implemented
-      directly (solution_surface instructed_agent_only): extended
-      technical_trader_solution/logging.py (TTS_RUN_TIMESTAMP coordination via
-      resolve_run_timestamp, MASKED_ENV_VARS allowlist, mask_sensitive,
-      MaskingFilter attached to handlers and mirrored onto the root logger plus
-      httpx/httpcore on first use, log_dir creation, log_level validation raising
-      ConfigurationError); added technical_trader_solution/errors.py
-      (TechnicalTraderSolutionError, DataProviderError, InvalidClusterError,
-      ConfigurationError, format_error_message); wired --log-dir/--log-level on
-      the tts root click.group (cli/main.py) and domain-exception handling with
-      the Unified Error Message Format on narrative CLI commands
-      (cli/narrative_clusters.py); added sdk.configure_logging() and
-      InvalidClusterError for unknown cluster_id in
-      sdk/narrative_clusters.py::get_cluster_trend; moved configure_logger to run
-      before FastMCP construction in mcp/server.py and wrapped each MCP tool in
-      mcp/narrative_clusters.py to return {"error": unified_message} on a domain
-      exception; renamed --log-file to --log-dir and added TTS_RUN_TIMESTAMP
-      subprocess-env propagation in cli/dashboard.py, and wrapped each SDK call in
-      dashboard/discovery_surface.py to render the unified message via
-      st.error(...)/st.warning(...). Also made the pre-existing FMPCredentialError
-      classes (core/market_data.py, coded_agents/narrative_clusters_agent/fetch.py)
-      subclass ConfigurationError, and wrapped httpx.HTTPError at both FMP call
-      sites into DataProviderError, so the existing narrative-clusters pipeline's
-      failure modes are covered by the new hierarchy without changing its computed
-      outputs. Fixed the coded-agent base class's configure_logger call
-      (coded_agents/base.py) and three pre-existing tests that used the retired
-      log_file= parameter to use log_dir= instead.
-    task_6_qa_validation: >
-      Authored tests/unit/test_logging.py and tests/unit/test_errors.py (new), and
-      added invalid-cluster-id interface tests to
-      tests/sdk/test_narrative_clusters_sdk.py,
-      tests/cli/test_narrative_clusters_cli.py, and
-      tests/mcp/test_narrative_clusters_mcp.py -- none require an API key, so they
-      run unconditionally. Manually verified end to end (not just tests passing):
-      ran the real `tts` CLI via the MCP Python execution surface against an
-      unknown cluster_id, confirming the log file
-      (technical_trader_solution_<timestamp>.log) recorded the masked error and
-      stderr printed the exact Unified Error Message Format
-      ("InvalidCluster: cluster_id 'no-such-cluster' does not exist."); imported
-      technical_trader_solution.mcp.server directly and confirmed the root logger
-      already carries 2 masked handlers and the httpx logger has propagate=False
-      before FastMCP construction completes; confirmed an invalid --log-level
-      value is rejected at CLI argument-parse time. coded_agent_invoke(qa-agent)
-      (task qa-story-002-v1) then ran for real: yaml-check on the story and
-      task-plan files passed; its own run_pytest("tests") call reported
-      pass_fail_result.pytest=pass (46 passed, 1 skipped for the FMP-client test,
-      FMP_API_KEY not configured in this environment) -- confirmed independently
-      by a direct `uv run pytest tests` invocation via the MCP pytest execution
-      surface beforehand. qa-agent set developer_approval_required=true because
-      the dashboard's three new error-handling call sites
-      (dashboard/discovery_surface.py) were verified by direct code review, not
-      an automated browser-driven demo. Per the human trader's direction, code
-      inspection was accepted as sufficient evidence for this contained change
-      (three existing SDK calls wrapped in try/except plus st.error(...), no new
-      UI) rather than investing in a full Playwright demo matching story 001's
-      rigor; developer approval granted 2026-07-14.
+          review-story-002-implspec-v3, 2026-07-14). Not applied inline; left as
+          a non-blocking documentation-polish opportunity for a future pass.
+      - item: The Streamlit dashboard's error-handling call sites were verified
+          by direct code review rather than an automated browser-driven demo
+          (unlike story 001's Playwright demo).
+        reason: Developer-approved as sufficient evidence for this contained
+          change (three existing SDK calls wrapped in try/except plus
+          st.error(...), no new UI); a future story that changes the dashboard's
+          UI more substantially should invest in a browser-driven demo again.
   open_questions: []
