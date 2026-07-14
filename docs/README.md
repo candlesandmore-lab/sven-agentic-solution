@@ -32,3 +32,4 @@ The methodology corpus is now linked from this index for quick navigation:
 ## Implementation document lookup
 
 - [implementation/01-narrative-cluster-discovery-surface.md](implementation/01-narrative-cluster-discovery-surface.md) — implementation specification for the nightly narrative extraction and clustering pipeline and the Discovery Surface dashboard page (story 001, US-015).
+- [implementation/02-logging-and-error-handling.md](implementation/02-logging-and-error-handling.md) — cross-cutting logging and error-handling implementation specification covering the core, CLI, SDK, MCP, and dashboard surfaces (story 002).

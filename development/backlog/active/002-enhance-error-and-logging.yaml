@@ -50,6 +50,7 @@ story:
     base_commit: 5df55a1b5e8f65fa4a2a9ddba624c7a6a75130a4
   current_implementation:
     architecture_document: docs/architecture/01-technical-trader-solution.md
+    implementation_document: docs/implementation/02-logging-and-error-handling.md
   guidelines:
     - Retain existing technical_trader_solution logic - do not alter behavior,
       only add observability and error handling.
@@ -173,6 +174,40 @@ story:
           the canonical term across the document set) checked directly -- no
           competing term exists elsewhere in docs/ or the story file; first use is
           canonical. docs/architecture/01-technical-trader-solution.md now at v0.4.
+      - severity: blocking
+        finding: Implementation-spec v0.1 (new docs/implementation/02-logging-and-error-handling.md)
+          left the log-file run-timestamp coordination, masking-filter installation
+          surface, and SDK configure_logger ownership contradictory or underspecified
+          (task review-story-002-implspec-v1, 2026-07-14).
+        resolution: >
+          v0.2 added TTS_RUN_TIMESTAMP inherited-environment-variable coordination
+          (including dashboard-subprocess env propagation), specified the masking
+          filter's installation surface, and replaced SDK log_dir/log_level kwargs
+          with a dedicated sdk.configure_logging() entry point.
+      - severity: blocking
+        finding: Implementation-spec v0.2's masked-fields scan scope (broad os.environ
+          substring match) risked false-positive masking of unrelated third-party
+          environment variables, and the root-logger filter/FastMCP initialization
+          order was underspecified (task review-story-002-implspec-v2, 2026-07-14).
+        resolution: >
+          v0.3 replaced the broad scan with an explicit MASKED_ENV_VARS allowlist
+          (FMP_API_KEY, ANTHROPIC_API_KEY), specified the MaskingFilter is attached
+          to handlers (not the Logger object) and mirrored onto the root logger's
+          handlers on first use, and required every entry point (including the MCP
+          server) to call configure_logger before constructing any third-party
+          client or server object such as FastMCP.
+      - severity: info
+        finding: Implementation-spec review gate re-run after the above resolutions.
+        resolution: >
+          Passed clean (task review-story-002-implspec-v3, 2026-07-14): all five
+          prior blocking/important findings confirmed resolved. Four new info/minor
+          findings recorded as deferrable documentation-quality notes (MaskingFilter
+          record.args-clearing rationale, mask_sensitive re-read performance
+          rationale, MASKED_ENV_VARS extension location/responsibility, and a
+          cross-reference for 'unified error message') -- accepted as deferred, not
+          applied inline, since they do not change the implementation contract.
+          docs/implementation/02-logging-and-error-handling.md now at v0.3;
+          docs/README.md's implementation document index updated in the same story.
     deferred_items:
       - item: Finalize and document the list of masked fields (API keys,
           credentials, PII) for log redaction, including the exact masking
@@ -180,5 +215,14 @@ story:
         reason: Not a story-draft-level decision; to be resolved during
           implementation planning, per the review-validation gate's
           defer_allowed=true classification (task review-story-002-draft-v1,
-          2026-07-14).
+          2026-07-14). Resolved during implementation-spec work as
+          MASKED_ENV_VARS (task review-story-002-implspec-v3).
+      - item: Documentation-quality notes from the implementation-spec pass -
+          explain why MaskingFilter clears record.args, note why mask_sensitive
+          re-reads os.environ per call, state MASKED_ENV_VARS's module location
+          and extension responsibility, and cross-reference 'unified error
+          message' to its defining section.
+        reason: All four marked defer_allowed=true (info/minor); do not change
+          the implementation contract, only documentation clarity (task
+          review-story-002-implspec-v3, 2026-07-14).
   open_questions: []
