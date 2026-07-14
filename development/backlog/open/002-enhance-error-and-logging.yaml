@@ -1,0 +1,137 @@
+schema_version: 1
+story:
+  id: 2
+  title: Enhance technical_trader_solution with robust error handling and logging
+    across all user surfaces
+  state: open
+  created_on: 2026-07-14
+  last_updated_on: 2026-07-14
+  source_todo:
+    - development/todos/002-enhance-error-and-logging.md
+  actor: agentic-developer
+  goal: >
+    Enhance the technical_trader_solution to implement robust error handling and
+    structured logging across all user interfaces and core layers, providing clear
+    diagnostics and supporting operational debugging.
+  success_criteria:
+    - The core and flow logic of technical_trader_solution remain unchanged, aside
+      from error handling and logging instrumentation.
+    - All control and data flow operations are logged in a log file located in
+      technical_trader_solution/ by default, overridable via a --log-dir parameter
+      standardized across CLI, SDK, MCP, and dashboard surfaces.
+    - Error handling is implemented with unified, clear error messages across CLI,
+      MCP, SDK API, and the Streamlit dashboard, and exceptions are properly raised
+      on the SDK API.
+    - Python standard logging with customizable configuration is used; no new
+      dependencies are introduced, and logs accumulate without retention or
+      rotation by default.
+    - Sensitive fields (API keys, credentials, PII) are never logged in plaintext;
+      the logging system supports a masked-fields list to ensure proper redaction.
+  architecture_options:
+    - option: Use Python's built-in logging module with a project-specific
+        configuration, including a file handler and customizable formatters per
+        surface.
+    - option: Integrate error handling using try/except structures at all public
+        interface boundaries (CLI entrypoints, SDK API, MCP server endpoints,
+        Streamlit dashboard event handlers), propagating exceptions as
+        appropriate.
+  implementation_options:
+    - option: Add a --log-dir parameter to CLI, MCP server, and Streamlit dashboard
+        launch scripts, defaulting log file storage to a technical_trader_solution/
+        subdirectory in the current working directory, matching agent-dev-agent
+        conventions.
+    - option: Apply redaction/masking automatically for any field listed in a
+        centralized masked-fields list before writing to logs, and ensure error
+        message templates avoid leaking sensitive values.
+    - option: Do not implement any log retention, rotation, or cleanup; manual
+        cleanup only, per guidelines.
+  repository_context:
+    branch: sven_input
+    base_commit: 5df55a1b5e8f65fa4a2a9ddba624c7a6a75130a4
+  current_implementation: {}
+  guidelines:
+    - Retain existing technical_trader_solution logic - do not alter behavior,
+      only add observability and error handling.
+    - Apply error message formatting consistently across CLI, MCP, SDK, and
+      dashboard surfaces.
+    - Define and document the exact masked-fields list as a deferred item for
+      implementation planning.
+    - No log retention or rotation - logs are append-only and cleaning is manual.
+    - Store logs in a configurable directory, defaulting to
+      technical_trader_solution/.
+    - Use one canonical term, 'technical_trader_solution', throughout code, docs,
+      and user surfaces; do not use 'technical trader solution' as an alias.
+  impact_analysis:
+    methodology: >
+      Instrument all control and data flow operations with logging, and insert
+      structured error handling paths at all user input and API boundaries.
+    architecture: >
+      Extend technical_trader_solution architecture with cross-cutting logging and
+      error handling layers, relying only on Python stdlib facilities.
+    implementation: >
+      Affects CLI (src/technical_trader_solution/cli/), SDK API
+      (src/technical_trader_solution/sdk/), MCP interface
+      (src/technical_trader_solution/mcp/), and the Streamlit dashboard
+      (src/technical_trader_solution/dashboard/). Exact file paths to be finalized
+      during the architecture and implementation-spec phases of the flow, not at
+      story-draft time.
+  development_cycle:
+    steps:
+      - Design cross-surface logging and error handling patterns based on analysis
+        of all public interfaces.
+      - Implement logging configuration and file management according to
+        guidelines and standards.
+      - Add error handling (try/except) and message templating logic at CLI, SDK,
+        MCP, and dashboard entrypoints.
+      - Integrate field masking/redaction for sensitive data into logging
+        functions.
+      - Test unified error messages and log outputs on all four surfaces.
+    review_findings:
+      - severity: blocking
+        finding: Ambiguous term - 'technical_trader_solution' vs. 'technical trader
+          solution' used inconsistently.
+        resolution: Standardized on 'technical_trader_solution' throughout the
+          story (task review-story-002-draft-v1, 2026-07-14).
+      - severity: blocking
+        finding: Contradiction between 'do not alter trading logic' and 'log
+          control/data flow operations'.
+        resolution: Reworded guideline to explicitly permit observability
+          instrumentation that does not change trading logic behavior or outputs
+          (task review-story-002-draft-v1, 2026-07-14).
+      - severity: blocking
+        finding: impact_analysis did not enumerate any implementation surfaces.
+        resolution: impact_analysis.implementation now enumerates CLI, SDK, MCP,
+          and dashboard at a coarse level, explicitly deferring exact file paths to
+          the architecture and implementation-spec phases (task
+          review-story-002-draft-v1, 2026-07-14).
+      - severity: blocking
+        finding: Repository context base_commit could not be verified as the
+          actual current commit from the review agent's perspective.
+        resolution: Confirmed base_commit was read directly from the live
+          repository via the git MCP tool immediately before drafting and is the
+          actual current HEAD of sven_input (task review-story-002-draft-v1,
+          2026-07-14).
+      - severity: important
+        finding: Story did not include a solution-surface classification section.
+        resolution: Clarified that solution-surface classification belongs to flow
+          step 9 (Solution-surface classification), not the story-draft checkpoint;
+          confirmed by the review agent on re-submission (task
+          review-story-002-draft-v2, 2026-07-14).
+      - severity: info
+        finding: Story-draft review checkpoint re-run after the above resolutions.
+        resolution: >
+          Passed clean (task review-story-002-draft-v2, 2026-07-14): terminology
+          consistency, non-contradictory guidelines, coarse-grained impact_analysis
+          with explicit deferral of file-level detail, verified repository
+          context, and the mandatory logging/error-handling cross-cutting
+          guardrail all confirmed satisfied. 12 findings, all informational; no
+          blocking, important, or minor issues. open_questions empty.
+    deferred_items:
+      - item: Finalize and document the list of masked fields (API keys,
+          credentials, PII) for log redaction, including the exact masking
+          technique.
+        reason: Not a story-draft-level decision; to be resolved during
+          implementation planning, per the review-validation gate's
+          defer_allowed=true classification (task review-story-002-draft-v1,
+          2026-07-14).
+  open_questions: []
