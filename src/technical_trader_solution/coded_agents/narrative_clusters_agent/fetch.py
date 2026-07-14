@@ -23,13 +23,14 @@ from technical_trader_solution.coded_agents.narrative_clusters_agent.models impo
     RawDocument,
     SourceType,
 )
+from technical_trader_solution.errors import ConfigurationError, DataProviderError
 
 FMP_BASE_URL = "https://financialmodelingprep.com"
 
 FetchDocuments = Callable[[str, datetime | None], list[RawDocument]]
 
 
-class FMPCredentialError(RuntimeError):
+class FMPCredentialError(ConfigurationError):
     """Raised when FMP_API_KEY is required but not configured."""
 
 
@@ -54,8 +55,11 @@ class FMPClient:
         self._client = http_client or httpx.Client(base_url=base_url, timeout=30.0)
 
     def _get(self, path: str, params: dict[str, str]) -> list[dict]:
-        response = self._client.get(path, params={**params, "apikey": self.api_key})
-        response.raise_for_status()
+        try:
+            response = self._client.get(path, params={**params, "apikey": self.api_key})
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise DataProviderError(f"FMP request to {path} failed: {exc}") from exc
         return response.json()
 
     def fetch_earnings_transcripts(

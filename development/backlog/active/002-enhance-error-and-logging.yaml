@@ -246,4 +246,61 @@ story:
       only for 'omitted' status, not 'generated'), and confirmation that this
       review pass served as the combined abstraction-alignment check for
       architecture v0.5, implementation-spec v0.3, and the task plan together.
+    implementation_execution: >
+      task_1_logging_and_errors_core through task_5_dashboard_wiring implemented
+      directly (solution_surface instructed_agent_only): extended
+      technical_trader_solution/logging.py (TTS_RUN_TIMESTAMP coordination via
+      resolve_run_timestamp, MASKED_ENV_VARS allowlist, mask_sensitive,
+      MaskingFilter attached to handlers and mirrored onto the root logger plus
+      httpx/httpcore on first use, log_dir creation, log_level validation raising
+      ConfigurationError); added technical_trader_solution/errors.py
+      (TechnicalTraderSolutionError, DataProviderError, InvalidClusterError,
+      ConfigurationError, format_error_message); wired --log-dir/--log-level on
+      the tts root click.group (cli/main.py) and domain-exception handling with
+      the Unified Error Message Format on narrative CLI commands
+      (cli/narrative_clusters.py); added sdk.configure_logging() and
+      InvalidClusterError for unknown cluster_id in
+      sdk/narrative_clusters.py::get_cluster_trend; moved configure_logger to run
+      before FastMCP construction in mcp/server.py and wrapped each MCP tool in
+      mcp/narrative_clusters.py to return {"error": unified_message} on a domain
+      exception; renamed --log-file to --log-dir and added TTS_RUN_TIMESTAMP
+      subprocess-env propagation in cli/dashboard.py, and wrapped each SDK call in
+      dashboard/discovery_surface.py to render the unified message via
+      st.error(...)/st.warning(...). Also made the pre-existing FMPCredentialError
+      classes (core/market_data.py, coded_agents/narrative_clusters_agent/fetch.py)
+      subclass ConfigurationError, and wrapped httpx.HTTPError at both FMP call
+      sites into DataProviderError, so the existing narrative-clusters pipeline's
+      failure modes are covered by the new hierarchy without changing its computed
+      outputs. Fixed the coded-agent base class's configure_logger call
+      (coded_agents/base.py) and three pre-existing tests that used the retired
+      log_file= parameter to use log_dir= instead.
+    task_6_qa_validation: >
+      Authored tests/unit/test_logging.py and tests/unit/test_errors.py (new), and
+      added invalid-cluster-id interface tests to
+      tests/sdk/test_narrative_clusters_sdk.py,
+      tests/cli/test_narrative_clusters_cli.py, and
+      tests/mcp/test_narrative_clusters_mcp.py -- none require an API key, so they
+      run unconditionally. Manually verified end to end (not just tests passing):
+      ran the real `tts` CLI via the MCP Python execution surface against an
+      unknown cluster_id, confirming the log file
+      (technical_trader_solution_<timestamp>.log) recorded the masked error and
+      stderr printed the exact Unified Error Message Format
+      ("InvalidCluster: cluster_id 'no-such-cluster' does not exist."); imported
+      technical_trader_solution.mcp.server directly and confirmed the root logger
+      already carries 2 masked handlers and the httpx logger has propagate=False
+      before FastMCP construction completes; confirmed an invalid --log-level
+      value is rejected at CLI argument-parse time. coded_agent_invoke(qa-agent)
+      (task qa-story-002-v1) then ran for real: yaml-check on the story and
+      task-plan files passed; its own run_pytest("tests") call reported
+      pass_fail_result.pytest=pass (46 passed, 1 skipped for the FMP-client test,
+      FMP_API_KEY not configured in this environment) -- confirmed independently
+      by a direct `uv run pytest tests` invocation via the MCP pytest execution
+      surface beforehand. qa-agent set developer_approval_required=true because
+      the dashboard's three new error-handling call sites
+      (dashboard/discovery_surface.py) were verified by direct code review, not
+      an automated browser-driven demo. Per the human trader's direction, code
+      inspection was accepted as sufficient evidence for this contained change
+      (three existing SDK calls wrapped in try/except plus st.error(...), no new
+      UI) rather than investing in a full Playwright demo matching story 001's
+      rigor; developer approval granted 2026-07-14.
   open_questions: []

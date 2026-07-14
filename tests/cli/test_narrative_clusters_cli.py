@@ -24,6 +24,22 @@ from technical_trader_solution.sdk import narrative_clusters as sdk
 FIXTURE_PATH = Path("tests/fixtures/narrative_clusters/documents.yaml")
 
 
+def test_cli_show_trend_unknown_cluster_exits_nonzero_with_unified_message(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    db_path = tmp_path / "narrative_clusters.sqlite"
+    monkeypatch.setattr(
+        cli_mod, "get_cluster_trend", lambda cluster_id: sdk.get_cluster_trend(cluster_id, db_path=db_path)
+    )
+
+    runner = CliRunner()
+    result = runner.invoke(app, ["narrative", "show-trend", "does-not-exist"])
+
+    assert result.exit_code == 1
+    assert "InvalidCluster:" in result.output
+    assert "Traceback" not in result.output
+
+
 def _load_documents() -> list[RawDocument]:
     if not FIXTURE_PATH.exists():
         pytest.skip(f"required fixture missing: {FIXTURE_PATH}")

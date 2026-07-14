@@ -52,7 +52,7 @@ def test_agent_evaluate_rejects_invalid_label(tmp_path) -> None:
     agent = NarrativeClustersAgent(
         db_path=tmp_path / "narrative_clusters.sqlite",
         state_db_path=tmp_path / "narrative-clusters-agent-state.sqlite",
-        log_file=tmp_path / "narrative-clusters-agent.log",
+        log_dir=tmp_path,
     )
     output = {
         "documents_fetched": 2,
@@ -76,7 +76,7 @@ def test_agent_evaluate_accepts_valid_label(tmp_path) -> None:
     agent = NarrativeClustersAgent(
         db_path=tmp_path / "narrative_clusters.sqlite",
         state_db_path=tmp_path / "narrative-clusters-agent-state.sqlite",
-        log_file=tmp_path / "narrative-clusters-agent.log",
+        log_dir=tmp_path,
     )
     output = {
         "documents_fetched": 2,

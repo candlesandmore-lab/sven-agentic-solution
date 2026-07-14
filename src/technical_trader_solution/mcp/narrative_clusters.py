@@ -13,6 +13,7 @@ from datetime import date
 
 from pydantic import BaseModel
 
+from technical_trader_solution.errors import TechnicalTraderSolutionError, format_error_message
 from technical_trader_solution.mcp.server import mcp
 from technical_trader_solution.sdk.narrative_clusters import (
     get_cluster_trend,
@@ -38,19 +39,28 @@ class GetClusterTrendRequest(BaseModel):
 def narrative_run_nightly_pipeline(request: RunNightlyPipelineRequest) -> dict:
     """Run one nightly narrative-extraction-and-clustering pass for the given tickers."""
 
-    return run_nightly_pipeline(request.tickers, run_date=request.run_date)
+    try:
+        return run_nightly_pipeline(request.tickers, run_date=request.run_date)
+    except TechnicalTraderSolutionError as exc:
+        return {"error": format_error_message(exc)}
 
 
 @mcp.tool()
-def narrative_get_clusters(request: GetClustersRequest) -> list[dict]:
+def narrative_get_clusters(request: GetClustersRequest) -> list[dict] | dict:
     """Trader-facing clusters for a run date (the most recent run when omitted)."""
 
-    run_date = date.fromisoformat(request.run_date) if request.run_date else None
-    return [cluster.model_dump(mode="json") for cluster in get_clusters(run_date)]
+    try:
+        run_date = date.fromisoformat(request.run_date) if request.run_date else None
+        return [cluster.model_dump(mode="json") for cluster in get_clusters(run_date)]
+    except TechnicalTraderSolutionError as exc:
+        return {"error": format_error_message(exc)}
 
 
 @mcp.tool()
-def narrative_get_cluster_trend(request: GetClusterTrendRequest) -> list[dict]:
+def narrative_get_cluster_trend(request: GetClusterTrendRequest) -> list[dict] | dict:
     """A cluster's frequency-of-mention/company-breadth trend, oldest run first."""
 
-    return get_cluster_trend(request.cluster_id)
+    try:
+        return get_cluster_trend(request.cluster_id)
+    except TechnicalTraderSolutionError as exc:
+        return {"error": format_error_message(exc)}

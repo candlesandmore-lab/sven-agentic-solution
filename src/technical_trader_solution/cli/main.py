@@ -10,14 +10,29 @@ import click
 
 from technical_trader_solution.cli.dashboard import dashboard
 from technical_trader_solution.cli.narrative_clusters import narrative
+from technical_trader_solution.logging import DEFAULT_LOG_LEVEL, VALID_LOG_LEVELS, configure_logger
 
 __all__ = ["app"]
 
 
 @click.group()
 @click.version_option(package_name="technical-trader-solution")
-def app() -> None:
+@click.option(
+    "--log-dir",
+    default=None,
+    help="Directory for the shared log file (default: technical_trader_solution/ in the current directory).",
+)
+@click.option(
+    "--log-level",
+    default=DEFAULT_LOG_LEVEL,
+    show_default=True,
+    type=click.Choice(VALID_LOG_LEVELS, case_sensitive=False),
+    help="Logging verbosity.",
+)
+def app(log_dir: str | None, log_level: str) -> None:
     """Technical Trader Solution command-line interface."""
+
+    configure_logger("technical_trader_solution", log_dir=log_dir, log_level=log_level)
 
 
 @click.group("mcp")

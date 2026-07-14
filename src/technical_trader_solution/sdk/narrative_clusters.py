@@ -19,6 +19,18 @@ from technical_trader_solution.coded_agents.narrative_clusters_agent.storage imp
     DEFAULT_DB_PATH,
     NarrativeClustersStore,
 )
+from technical_trader_solution.errors import InvalidClusterError
+from technical_trader_solution.logging import DEFAULT_LOG_LEVEL, configure_logger
+
+
+def configure_logging(
+    *, log_dir: str | Path | None = None, log_level: str = DEFAULT_LOG_LEVEL
+):
+    """Configure the shared logger for an embedding process that does not go through the
+    CLI. Call once at process startup, before any other SDK function, per the Logging
+    Contract's SDK section -- SDK functions do not call `configure_logger` themselves."""
+
+    return configure_logger("technical_trader_solution", log_dir=log_dir, log_level=log_level)
 
 
 def run_nightly_pipeline(
@@ -54,7 +66,13 @@ def get_clusters(
 
 
 def get_cluster_trend(cluster_id: str, *, db_path: Path | str = DEFAULT_DB_PATH) -> list[dict]:
-    """This cluster's frequency-of-mention/company-breadth trend, oldest run first."""
+    """This cluster's frequency-of-mention/company-breadth trend, oldest run first.
+
+    Raises `InvalidClusterError` when `cluster_id` has never existed; returns an empty
+    list when the cluster exists but has no trend snapshots yet.
+    """
 
     store = NarrativeClustersStore(db_path)
+    if cluster_id not in store.all_cluster_ids():
+        raise InvalidClusterError(f"cluster_id {cluster_id!r} does not exist.")
     return [snapshot.model_dump(mode="json") for snapshot in store.get_cluster_trend(cluster_id)]

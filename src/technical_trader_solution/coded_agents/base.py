@@ -110,15 +110,15 @@ class ClaudeCodeSDKAgentBase(ABC):
         self,
         *,
         state_db_path: Path | None = None,
-        log_file: str | Path | None = None,
-        log_level: str = "INFO",
+        log_dir: str | Path | None = None,
+        log_level: str = "info",
     ) -> None:
         self.state_store = CodedAgentStateStore(
             state_db_path or _default_state_db_path(self.agent_slug)
         )
         self.logger = configure_logger(
             f"technical_trader_solution.coded_agents.{self.agent_slug}",
-            log_file=log_file or f"{self.agent_slug}.log",
+            log_dir=log_dir,
             log_level=log_level,
         )
         self._graph = self._build_graph()

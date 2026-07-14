@@ -15,10 +15,12 @@ import os
 import httpx
 from pydantic import BaseModel
 
+from technical_trader_solution.errors import ConfigurationError, DataProviderError
+
 FMP_BASE_URL = "https://financialmodelingprep.com"
 
 
-class FMPCredentialError(RuntimeError):
+class FMPCredentialError(ConfigurationError):
     """Raised when FMP_API_KEY is required but not configured."""
 
 
@@ -45,10 +47,15 @@ def fetch_historical_prices(
             "chart-inspection price data."
         )
     client = http_client or httpx.Client(base_url=base_url, timeout=30.0)
-    response = client.get(
-        f"/api/v3/historical-price-full/{ticker}", params={"apikey": resolved_key}
-    )
-    response.raise_for_status()
+    try:
+        response = client.get(
+            f"/api/v3/historical-price-full/{ticker}", params={"apikey": resolved_key}
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise DataProviderError(
+            f"FMP historical-price request for {ticker} failed: {exc}"
+        ) from exc
     payload = response.json()
     history = payload.get("historical", [])
     points = [

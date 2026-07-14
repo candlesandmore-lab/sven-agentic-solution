@@ -24,36 +24,31 @@ import streamlit as st
 from technical_trader_solution.coded_agents.narrative_clusters_agent.storage import (
     DEFAULT_DB_PATH,
 )
-from technical_trader_solution.core.market_data import (
-    FMPCredentialError,
-    fetch_historical_prices,
-)
-from technical_trader_solution.logging import (
-    DEFAULT_LOG_FILE,
-    DEFAULT_LOG_LEVEL,
-    configure_logger,
-)
+from technical_trader_solution.core.market_data import fetch_historical_prices
+from technical_trader_solution.errors import TechnicalTraderSolutionError, format_error_message
+from technical_trader_solution.logging import DEFAULT_LOG_LEVEL, configure_logger
 from technical_trader_solution.sdk.narrative_clusters import get_cluster_trend, get_clusters
 
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--db-path", default=str(DEFAULT_DB_PATH))
-    parser.add_argument("--log-file", default=DEFAULT_LOG_FILE)
+    parser.add_argument("--log-dir", default=None)
     parser.add_argument("--log-level", default=DEFAULT_LOG_LEVEL)
     known_args, _ = parser.parse_known_args(sys.argv[1:])
     return known_args
 
 
 @st.cache_resource
-def _logger(log_file: str, log_level: str):
+def _logger(log_dir: str | None, log_level: str):
     return configure_logger(
-        "technical_trader_solution.dashboard", log_file=log_file, log_level=log_level
+        "technical_trader_solution.dashboard", log_dir=log_dir, log_level=log_level
     )
 
 
 args = _parse_args()
-logger = _logger(args.log_file, args.log_level)
+logger = _logger(args.log_dir, args.log_level)
+logger.info("Discovery Surface page loaded")
 
 st.set_page_config(page_title="Discovery Surface", layout="wide")
 st.title("Discovery Surface")
@@ -66,9 +61,8 @@ st.caption(
 
 try:
     clusters = get_clusters(db_path=args.db_path)
-except Exception:
-    logger.exception("Failed to load clusters for the Discovery Surface page")
-    st.error("Could not load clusters. Check the dashboard log file for details.")
+except TechnicalTraderSolutionError as exc:
+    st.error(format_error_message(exc))
     clusters = []
 
 if not clusters:
@@ -96,8 +90,8 @@ for cluster in clusters:
 
         try:
             trend = get_cluster_trend(cluster.cluster_id, db_path=args.db_path)
-        except Exception:
-            logger.exception("Failed to load trend for cluster %s", cluster.cluster_id)
+        except TechnicalTraderSolutionError as exc:
+            st.error(format_error_message(exc))
             trend = []
 
         if trend:
@@ -133,12 +127,8 @@ if selected_cluster is not None:
             st.subheader(ticker)
             try:
                 prices = fetch_historical_prices(ticker)
-            except FMPCredentialError:
-                st.warning("FMP_API_KEY is not configured; cannot load price history.")
-                continue
-            except Exception:
-                logger.exception("Failed to load price history for %s", ticker)
-                st.warning(f"Could not load price history for {ticker}.")
+            except TechnicalTraderSolutionError as exc:
+                st.warning(format_error_message(exc))
                 continue
             if not prices:
                 st.info("No price history available.")

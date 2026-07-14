@@ -56,7 +56,7 @@ def test_narrative_clusters_agent_end_to_end(tmp_path: Path) -> None:
     agent = NarrativeClustersAgent(
         db_path=tmp_path / "narrative_clusters.sqlite",
         state_db_path=tmp_path / "narrative-clusters-agent-state.sqlite",
-        log_file=tmp_path / "narrative-clusters-agent.log",
+        log_dir=tmp_path,
     )
 
     result = agent.run(

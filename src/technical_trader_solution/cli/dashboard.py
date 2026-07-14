@@ -8,6 +8,7 @@ own convention for script arguments), per docs/implementation/
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -17,7 +18,12 @@ import click
 from technical_trader_solution.coded_agents.narrative_clusters_agent.storage import (
     DEFAULT_DB_PATH,
 )
-from technical_trader_solution.logging import DEFAULT_LOG_FILE, DEFAULT_LOG_LEVEL
+from technical_trader_solution.logging import (
+    DEFAULT_LOG_LEVEL,
+    RUN_TIMESTAMP_ENV_VAR,
+    VALID_LOG_LEVELS,
+    resolve_run_timestamp,
+)
 
 DISCOVERY_SURFACE_PAGE = Path(__file__).parent.parent / "dashboard" / "discovery_surface.py"
 
@@ -35,9 +41,15 @@ def dashboard() -> None:
     show_default=True,
     help="Path to the narrative_clusters SQLite store.",
 )
-@click.option("--log-file", default=DEFAULT_LOG_FILE, show_default=True, help="Dashboard log file path.")
-@click.option("--log-level", default=DEFAULT_LOG_LEVEL, show_default=True, help="Dashboard log level.")
-def serve(port: int, db_path: str, log_file: str, log_level: str) -> None:
+@click.option("--log-dir", default=None, help="Directory for the shared log file (default: technical_trader_solution/ in the current directory).")
+@click.option(
+    "--log-level",
+    default=DEFAULT_LOG_LEVEL,
+    show_default=True,
+    type=click.Choice(VALID_LOG_LEVELS, case_sensitive=False),
+    help="Logging verbosity.",
+)
+def serve(port: int, db_path: str, log_dir: str | None, log_level: str) -> None:
     """Serve the Discovery Surface page of the Technical Trader Solution dashboard."""
 
     command = [
@@ -51,9 +63,15 @@ def serve(port: int, db_path: str, log_file: str, log_level: str) -> None:
         "--",
         "--db-path",
         db_path,
-        "--log-file",
-        log_file,
         "--log-level",
         log_level,
     ]
-    raise SystemExit(subprocess.call(command))
+    if log_dir is not None:
+        command.extend(["--log-dir", log_dir])
+
+    # Resolve TTS_RUN_TIMESTAMP in this process and pass it through the subprocess
+    # environment, so the streamlit subprocess's own configure_logger call reuses it
+    # instead of minting a new one, per the run-scoping guardrail for nested processes.
+    env = dict(os.environ)
+    env[RUN_TIMESTAMP_ENV_VAR] = resolve_run_timestamp()
+    raise SystemExit(subprocess.call(command, env=env))

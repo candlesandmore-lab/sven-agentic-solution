@@ -19,10 +19,10 @@ def test_package_imports() -> None:
     assert technical_trader_solution.mcp.server.mcp is not None
 
 
-def test_logging_configure_logger_writes_to_stderr_not_stdout(capsys) -> None:
+def test_logging_configure_logger_writes_to_stderr_not_stdout(capsys, tmp_path) -> None:
     from technical_trader_solution.logging import configure_logger
 
-    logger = configure_logger("technical_trader_solution.test", log_file=None)
+    logger = configure_logger("technical_trader_solution.test", log_dir=tmp_path)
     logger.info("scaffold smoke test message")
 
     captured = capsys.readouterr()

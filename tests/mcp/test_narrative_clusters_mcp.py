@@ -48,6 +48,24 @@ def test_mcp_tools_registered() -> None:
     } <= tool_names
 
 
+def test_mcp_get_cluster_trend_returns_unified_error_for_unknown_cluster(tmp_path: Path) -> None:
+    import technical_trader_solution.mcp.narrative_clusters as mcp_mod
+
+    db_path = tmp_path / "narrative_clusters.sqlite"
+    original_get_cluster_trend = mcp_mod.get_cluster_trend
+    mcp_mod.get_cluster_trend = lambda cluster_id: original_get_cluster_trend(cluster_id, db_path=db_path)
+    try:
+        tool_result = asyncio.run(
+            mcp.call_tool("narrative_get_cluster_trend", {"request": {"cluster_id": "does-not-exist"}})
+        )
+    finally:
+        mcp_mod.get_cluster_trend = original_get_cluster_trend
+
+    payload = tool_result.structured_content["result"] if tool_result.structured_content else tool_result.data
+    assert "error" in payload
+    assert payload["error"].startswith("InvalidCluster:")
+
+
 @pytest.mark.live_endpoint
 def test_mcp_get_clusters_excludes_topic_embedding(tmp_path: Path) -> None:
     if not os.environ.get("ANTHROPIC_API_KEY"):

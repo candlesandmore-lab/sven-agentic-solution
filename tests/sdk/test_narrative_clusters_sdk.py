@@ -16,9 +16,31 @@ from technical_trader_solution.coded_agents.narrative_clusters_agent.models impo
     RawDocument,
     SourceType,
 )
+from technical_trader_solution.errors import InvalidClusterError, TechnicalTraderSolutionError
 from technical_trader_solution.sdk import narrative_clusters as sdk
 
 FIXTURE_PATH = Path("tests/fixtures/narrative_clusters/documents.yaml")
+
+
+def test_get_cluster_trend_raises_invalid_cluster_error_for_unknown_id(tmp_path: Path) -> None:
+    db_path = tmp_path / "narrative_clusters.sqlite"
+
+    with pytest.raises(InvalidClusterError):
+        sdk.get_cluster_trend("does-not-exist", db_path=db_path)
+
+
+def test_technical_trader_solution_error_propagates_unchanged_from_sdk(tmp_path: Path) -> None:
+    # The SDK layer never catches TechnicalTraderSolutionError itself (per the Domain
+    # Exception Hierarchy section); confirm InvalidClusterError -- a subclass -- reaches
+    # the caller as that exact type, not swallowed or wrapped.
+    db_path = tmp_path / "narrative_clusters.sqlite"
+
+    try:
+        sdk.get_cluster_trend("does-not-exist", db_path=db_path)
+    except TechnicalTraderSolutionError as exc:
+        assert isinstance(exc, InvalidClusterError)
+    else:
+        pytest.fail("expected InvalidClusterError to propagate")
 
 
 def _load_documents() -> list[RawDocument]:

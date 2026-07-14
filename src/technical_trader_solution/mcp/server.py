@@ -9,6 +9,14 @@ from __future__ import annotations
 
 from fastmcp import FastMCP
 
+from technical_trader_solution.logging import configure_logger
+
+# Configure logging before constructing FastMCP: FastMCP configures the root logger with
+# its own handler purely by being constructed (regardless of which command runs), so
+# configure_logger must run first to guarantee the root logger already carries the masked,
+# shared-log-file handlers before any component's log records start propagating to it.
+configure_logger("technical_trader_solution")
+
 mcp = FastMCP("technical-trader-solution")
 
 __all__ = ["mcp"]
