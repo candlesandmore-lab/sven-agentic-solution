@@ -3,7 +3,7 @@ story:
   id: 2
   title: Enhance technical_trader_solution with robust error handling and logging
     across all user surfaces
-  state: open
+  state: active
   created_on: 2026-07-14
   last_updated_on: 2026-07-14
   source_todo:
@@ -126,6 +126,11 @@ story:
           context, and the mandatory logging/error-handling cross-cutting
           guardrail all confirmed satisfied. 12 findings, all informational; no
           blocking, important, or minor issues. open_questions empty.
+      - severity: info
+        finding: Story lifecycle transition open -> active.
+        resolution: Branch was clean at transition time (task review-story-002-draft-v2
+          committed prior); moved development/backlog/open/002-enhance-error-and-logging.yaml
+          to development/backlog/active/002-enhance-error-and-logging.yaml, 2026-07-14.
     deferred_items:
       - item: Finalize and document the list of masked fields (API keys,
           credentials, PII) for log redaction, including the exact masking
