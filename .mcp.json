@@ -1,10 +1,12 @@
 {
   "mcpServers": {
     "agent-building-agent": {
-      "command": "agent-building-agent",
+      "type": "stdio",
+      "command": "/Users/frank/SynologyDrive/Drive/LaptopOnly/Programming/agentic-trading-solutions/sven-agentic-solution/.venv/bin/agent-building-agent",
       "args": [
         "mcp-serve"
-      ]
+      ],
+      "cwd": "/Users/frank/SynologyDrive/Drive/LaptopOnly/Programming/agentic-trading-solutions/sven-agentic-solution"
     },
     "technical-trader-solution": {
       "command": "tts",

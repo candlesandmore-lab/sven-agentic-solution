@@ -41,7 +41,16 @@ schema:
       emit large findings sets. When a provider returns stop_reason=max_tokens, the coded
       agent runtime surfaces it as an explicit truncation feedback signal so the refine
       loop can ask for a more compact payload instead of failing with a confusing JSON
-      syntax error.
+      syntax error. When the provider is Claude and max_tokens exceeds the Anthropic SDK's
+      non-streaming timeout threshold (21333, computed from the SDK's formula
+      `max_tokens > 600 * 128_000 / 3600`), the Claude chat-completion client
+      automatically switches to streaming and aggregates the response so the call does not
+      raise "Streaming is required for operations that may take longer than 10 minutes"; at
+      or below the threshold the non-streaming path is used. No new configuration field is
+      added — the user just sets max_tokens and the client decides streaming vs
+      non-streaming transparently. The OpenAI-compatible provider does not need this
+      guardrail because the OpenAI SDK does not impose an equivalent non-streaming timeout
+      tied to max_tokens.
   constraints:
     - The top-level agent is always an instructed agent; this configuration file only configures coded sub-agents.
     - All coded agents use the same uniform SDK base class (ClaudeCode SDK, Anthropic-native).

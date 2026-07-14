@@ -21,3 +21,15 @@ data/
 *.log
 
 .env
+# agent-dev-agent install
+.mcp.json
+.clinerules
+.github
+.claude
+.vscode
+# agent-dev-agent runtime
+agent_building_agent.log
+qa-agent.log
+instructed-agent-creation-agent.log
+review-validation-agent.log
+story-telling-agent.log
