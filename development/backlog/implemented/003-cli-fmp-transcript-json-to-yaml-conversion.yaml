@@ -1,0 +1,73 @@
+schema_version: 1
+story:
+  id: 3
+  title: CLI-only conversion flow to transform FMP earnings transcript JSON to canonical fixture-document YAML in technical_trader_solution
+  state: implemented
+  created_on: 2026-07-15
+  last_updated_on: 2026-07-15
+  source_todo:
+    - development/todos/003-add-transcript-json-to-yaml-cli-conversion.md
+  actor: development agents
+  goal: >
+    Provide a CLI-only conversion flow in technical_trader_solution that transforms
+    FMP earnings transcript JSON input into YAML files in the canonical
+    fixture-document format used by tests/fixtures/narrative_clusters/documents.yaml,
+    strictly validates both input and output, and generates an initial converted YAML
+    file from the current transcript export.
+  success_criteria:
+    - The technical_trader_solution CLI exposes the command `tts transcripts convert-fmp-json <input-file-path> [--output-dir <dir>]`.
+    - The command writes one output YAML file in the canonical fixture-document format, using the top-level `documents` key and document entries containing `ticker`, `source_type`, `source_id`, `published_at`, and `text`.
+    - The generated YAML for Project_Communication/FMP_Earnings_Transcripts/earnings_transcripts.json is output into Project_Communication/FMP_Earnings_Transcripts/ using the `{input_stem}_{timestamp}.yaml` filename pattern.
+    - Conversion logic applies strict validation to both input JSON and output YAML, fails fast on malformed or incomplete input records, and reports detailed validation errors on the CLI.
+    - The flow is limited to the CLI surface in this story, with explicit reviewed omission of SDK, MCP, dashboard, and Perl-wrapper interfaces.
+    - Repository tests validate conversion logic, error handling, logging behavior, and CLI argument paths using targeted sample inputs and the real transcript export path as a reference artifact.
+  architecture_options:
+    - option: Implement the capability as a reusable internal conversion module inside technical_trader_solution, but expose it only through the CLI in this story.
+      rationale: Keeps the code testable and maintainable without expanding the public surface area beyond the user's approved CLI-only scope.
+  implementation_options:
+    - option: Add `tts transcripts convert-fmp-json <input-file-path> [--output-dir <dir>]` under the existing CLI, along with `--source-type`, `--log-dir`, and `--log-level` options.
+      rationale: The user approved a single-file CLI flow. `--source-type` remains available for future related conversions while defaulting to `earnings_transcript` for the current FMP transcript export.
+    - option: Require the input JSON to be a top-level object mapping ticker symbols to lists of transcript objects with `symbol`, `quarter`, `year`, `date`, and `content`.
+      rationale: Matches the live structure in Project_Communication/FMP_Earnings_Transcripts/earnings_transcripts.json and enables deterministic fail-fast validation.
+    - option: Emit canonical fixture-document YAML under one top-level `documents` key using `ticker`, `source_type`, `source_id`, `published_at`, and `text`.
+      rationale: This is the exhaustive output contract for the story.
+  repository_context:
+    branch: sven_input
+    base_commit: a07fbef273cf22afd98269e76f0789b9c021b113
+  current_implementation:
+    canonical_output_reference: tests/fixtures/narrative_clusters/documents.yaml
+    downstream_related_reference: docs/implementation/01-narrative-cluster-discovery-surface.md
+    source_input_reference: Project_Communication/FMP_Earnings_Transcripts/earnings_transcripts.json
+    generated_output_reference: Project_Communication/FMP_Earnings_Transcripts/earnings_transcripts_2026-07-15T09-16-35.yaml
+    logging_reference: docs/implementation/02-logging-and-error-handling.md
+    implementation_document: docs/implementation/03-fmp-transcript-json-to-yaml-cli-conversion.md
+  guidelines:
+    - Use one canonical term for the target output shape: canonical fixture-document format.
+    - Restrict this story to single-file conversion only; batch conversion is out of scope.
+    - Validate only against the canonical fixture-document format in this story; downstream narrative-finding compatibility is out of scope.
+    - Do not add SDK, MCP, dashboard, or Perl-wrapper surfaces in this story.
+    - Do not tolerate malformed, incomplete, or empty transcript records; fail fast with detailed errors.
+    - Use the existing repository logging and domain-exception pattern for the new CLI command.
+  impact_analysis:
+    methodology: Adds a trader-facing CLI utility for normalizing external transcript exports into the repository's canonical fixture-document format, with explicit scope limits and deterministic validation rules.
+    architecture: Introduces a reusable internal conversion module plus one CLI entry point only. The capability intentionally omits SDK/MCP/dashboard/public wrapper surfaces in this story, with that omission recorded and reviewed.
+    implementation: Affects the CLI surface, a new internal conversion module, repository tests, and one generated YAML artifact under Project_Communication/FMP_Earnings_Transcripts/.
+  development_cycle:
+    steps:
+      - Designed the internal conversion module around the live FMP transcript export shape.
+      - Implemented strict input validation for symbol, quarter, year, date, and content fields.
+      - Implemented canonical fixture-document YAML emission with deterministic source_id and published_at mapping.
+      - Wired the new `tts transcripts convert-fmp-json` CLI command with logging and error handling.
+      - Generated the initial converted YAML file from the current transcript export.
+      - Added tests for conversion success, malformed input failure, CLI argument handling, and logging/error output.
+    review_findings:
+      - severity: blocking
+        finding: Story-draft review required explicit CLI signature, input schema, output schema, logging contract, and invocation-surface omissions before planning.
+        resolution: Recorded these details in the story and implementation spec before activation.
+      - severity: info
+        finding: Final review gate passed with no blocking findings.
+        resolution: Review-validation agent task `review-story-003-final-v1` returned gate state `pass` after confirming the CLI surface, tests, generated artifact, logging behavior, and documentation alignment.
+    deferred_items:
+      - Batch conversion of multiple input files is out of scope for this story.
+      - Additional SDK or MCP surfaces for transcript conversion are out of scope for this story.
+  open_questions: []

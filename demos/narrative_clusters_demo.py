@@ -29,8 +29,9 @@ from technical_trader_solution.coded_agents.narrative_clusters_agent.models impo
     SourceType,
 )
 
-FIXTURE_PATH = Path("tests/fixtures/narrative_clusters/documents.yaml")
-DEMO_DB_PATH = Path("data/demo_narrative_clusters.sqlite")
+FIXTURE_PATH = Path("Project_Communication/FMP_Earnings_Transcripts/earnings_transcripts_2026-07-15T09-16-35.yaml") #tests/fixtures/narrative_clusters/documents.yaml")
+
+DEMO_DB_PATH = Path("data/demo1_narrative_clusters.sqlite")
 DEMO_RUN_DATE = "2026-06-06"
 
 

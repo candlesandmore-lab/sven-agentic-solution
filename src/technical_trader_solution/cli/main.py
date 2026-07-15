@@ -10,6 +10,7 @@ import click
 
 from technical_trader_solution.cli.dashboard import dashboard
 from technical_trader_solution.cli.narrative_clusters import narrative
+from technical_trader_solution.cli.transcripts import transcripts
 from technical_trader_solution.logging import DEFAULT_LOG_LEVEL, VALID_LOG_LEVELS, configure_logger
 
 __all__ = ["app"]
@@ -50,5 +51,6 @@ def mcp_serve() -> None:
 
 
 app.add_command(narrative)
+app.add_command(transcripts)
 app.add_command(mcp_group)
 app.add_command(dashboard)

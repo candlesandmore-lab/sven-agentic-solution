@@ -33,3 +33,5 @@ The methodology corpus is now linked from this index for quick navigation:
 
 - [implementation/01-narrative-cluster-discovery-surface.md](implementation/01-narrative-cluster-discovery-surface.md) — implementation specification for the nightly narrative extraction and clustering pipeline and the Discovery Surface dashboard page (story 001, US-015).
 - [implementation/02-logging-and-error-handling.md](implementation/02-logging-and-error-handling.md) — cross-cutting logging and error-handling implementation specification covering the core, CLI, SDK, MCP, and dashboard surfaces (story 002).
+- [implementation/03-fmp-transcript-json-to-yaml-cli-conversion.md](implementation/03-fmp-transcript-json-to-yaml-cli-conversion.md) — implementation specification for the CLI-only FMP transcript JSON to canonical fixture-document YAML conversion flow (story 003).
+

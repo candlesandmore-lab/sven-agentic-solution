@@ -1,0 +1,79 @@
+story_task_plan:
+  story_id: 3
+  source_implementation_spec: docs/implementation/03-fmp-transcript-json-to-yaml-cli-conversion.md
+  source_architecture: docs/architecture/01-technical-trader-solution.md
+  architecture_decision:
+    change_type: no_change
+    rationale: >
+      Story 003 adds a local CLI utility under the existing Technical Trader Solution CLI
+      and reuses the established logging/error-handling architecture. It does not alter
+      the delivery interface, component topology, or solution-surface classification.
+  ordered_tasks:
+    - id: task_1_conversion_core
+      owner: python-creation-agent
+      description: Implement the internal conversion module.
+      prerequisite_artifacts: []
+    - id: task_2_cli_wiring
+      owner: python-creation-agent
+      description: Add the `tts transcripts convert-fmp-json` CLI surface.
+      prerequisite_artifacts:
+        - task_1_conversion_core
+    - id: task_3_generated_artifact
+      owner: python-creation-agent
+      description: Generate the YAML artifact from the live transcript export.
+      prerequisite_artifacts:
+        - task_2_cli_wiring
+    - id: task_4_qa_validation
+      owner: qa-agent
+      description: Add and run the focused unit and CLI tests.
+      prerequisite_artifacts:
+        - task_2_cli_wiring
+        - task_3_generated_artifact
+    - id: task_5_final_review
+      owner: review-validation-agent
+      description: Final review gate across code, tests, generated artifact, and docs.
+      prerequisite_artifacts:
+        - task_4_qa_validation
+  parallelizable_tasks:
+    - note: task_1_conversion_core and task_2_cli_wiring remained serial because CLI behavior depends directly on the conversion-core contract.
+  review_checkpoints:
+    - after: task_2_cli_wiring
+      note: Review the CLI-only surface, logging contract, and explicit omission of SDK/MCP/dashboard/perl-wrapper surfaces before generating the artifact.
+    - after: task_4_qa_validation
+      note: Final review gate before completion.
+  completion_conditions:
+    - All six story success criteria are demonstrably met.
+    - The generated YAML artifact exists under Project_Communication/FMP_Earnings_Transcripts/ and matches the canonical fixture-document format.
+    - Unit and CLI tests pass for the touched slice.
+    - docs/implementation/03-fmp-transcript-json-to-yaml-cli-conversion.md, docs/README.md, and the implemented story align with the shipped code.
+    - The CLI-only omission of SDK/MCP/dashboard/perl-wrapper surfaces remains explicit and justified in the final artifacts.
+  solution_surface: instructed_agent_only
+  top_level_runtime: instructed
+  subagent_topology: []
+  phase_owners:
+    - phase: task_1_conversion_core
+      agent: python-creation-agent
+    - phase: task_2_cli_wiring
+      agent: python-creation-agent
+    - phase: task_3_generated_artifact
+      agent: python-creation-agent
+    - phase: task_4_qa_validation
+      agent: qa-agent
+    - phase: task_5_final_review
+      agent: review-validation-agent
+  invocation_surfaces:
+    cli:
+      status: generated
+      rationale: null
+    sdk:
+      status: omitted
+      rationale: Conversion is a local one-shot utility in this story, not a reusable public library API.
+    mcp:
+      status: omitted
+      rationale: Conversion is not an interactive MCP tool workflow in this story.
+    dashboard:
+      status: omitted
+      rationale: No dashboard use case exists for local transcript file conversion.
+    perl_wrapper:
+      status: omitted
+      rationale: User approved CLI-only implementation.

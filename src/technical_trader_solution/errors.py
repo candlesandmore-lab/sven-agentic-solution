@@ -40,6 +40,10 @@ class ConfigurationError(TechnicalTraderSolutionError):
     """A required setting (for example `FMP_API_KEY`) is missing or invalid."""
 
 
+class ConversionError(TechnicalTraderSolutionError):
+    """A transcript-conversion input, output, or file operation failed validation."""
+
+
 def format_error_message(exc: TechnicalTraderSolutionError) -> str:
     """The Unified Error Message Format: `"{error_type}: {message}"`, masked once here."""
 

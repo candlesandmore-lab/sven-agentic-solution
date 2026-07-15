@@ -12,6 +12,7 @@ dependencies = [
     "langgraph>=1.2.8",
     "plotly>=5.24",
     "pydantic>=2.7",
+    "pyyaml>=6.0",
     "streamlit>=1.38",
 ]
 
@@ -21,7 +22,6 @@ tts = "technical_trader_solution.cli.main:app"
 [dependency-groups]
 dev = [
     "pytest>=8.0",
-    "pyyaml>=6.0",
 ]
 
 [build-system]
